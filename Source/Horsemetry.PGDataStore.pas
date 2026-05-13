@@ -424,7 +424,7 @@ begin
     lQuery.SQL.Add('  to_char(date_trunc(''minute'', Created_At), ''YYYY-MM-DD"T"HH24:MI:SS'') AS minute_bucket,');
     lQuery.SQL.Add('  COUNT(*) AS request_count');
     lQuery.SQL.Add('FROM request');
-    lQuery.SQL.Add('WHERE Created_At >= NOW() - INTERVAL ''10 minutes''');
+    lQuery.SQL.Add('WHERE Created_At >= NOW() - INTERVAL ''60 minutes''');
     lQuery.SQL.Add('GROUP BY date_trunc(''minute'', Created_At)');
     lQuery.SQL.Add('ORDER BY date_trunc(''minute'', Created_At) ASC');
     lQuery.Open();
@@ -569,6 +569,8 @@ end;
 function TPostgreSQLDataStoreBuilder.Database(
   const Value: String): TPostgreSQLDataStoreBuilder;
 begin
+  FDatabase := Value;
+
   Result := Self;
 end;
 
