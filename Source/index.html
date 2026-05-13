@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Telemetry Dashboard</title>
+    <!-- Clean, sans-serif typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --primary: #3b82f6;
+            --surface-subtle: #f9fafb;
+
+            /* Method Colors */
+            --get-color: #3b82f6;
+            --get-bg: #eff6ff;
+            --post-color: #10b981;
+            --post-bg: #d1fae5;
+            --put-color: #f59e0b;
+            --put-bg: #fef3c7;
+            --delete-color: #ef4444;
+            --delete-bg: #fee2e2;
+            --patch-color: #8b5cf6;
+            --patch-bg: #ede9fe;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #111827;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --card-bg: #1f2937;
+            --border-color: #374151;
+            --surface-subtle: #283347;
+
+            --get-bg: rgba(59, 130, 246, 0.2);
+            --post-bg: rgba(16, 185, 129, 0.2);
+            --put-bg: rgba(245, 158, 11, 0.2);
+            --delete-bg: rgba(239, 68, 68, 0.2);
+            --patch-bg: rgba(139, 92, 246, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding-bottom: 3rem;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem;
+        }
+
+        header {
+            display: block;
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .status {
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            background-color: var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .status.connected {
+            background-color: var(--post-bg);
+            color: var(--post-color);
+        }
+
+        .status.offline {
+            background-color: var(--put-bg);
+            color: var(--put-color);
+        }
+
+        .section {
+            margin-bottom: 2.5rem;
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .metric-title {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .metric-unit {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 2fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .top-expensive-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+            gap: 1.5rem;
+            align-items: start;
+            overflow: hidden;
+        }
+
+        .top-expensive-grid>* {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .top-expensive-grid .table-card {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .charts-grid .chart-card:last-child {
+                grid-column: 1 / -1;
+            }
+
+            .top-expensive-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        /* Tables */
+        .table-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            table-layout: fixed;
+        }
+
+        th {
+            background-color: var(--surface-subtle);
+            padding: 0.75rem 1.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 1rem 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Expandable Rows */
+        .expandable-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .expandable-row:hover td {
+            background-color: var(--border-color);
+        }
+
+        .details-row {
+            display: none;
+        }
+
+        .details-row.open {
+            display: table-row;
+        }
+
+        .details-row td {
+            max-width: 0;
+            white-space: normal;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        .details-content {
+            padding: 1rem 1.5rem;
+            background-color: var(--surface-subtle);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+            word-break: break-all;
+            overflow-wrap: break-word;
+        }
+
+        .details-content strong {
+            color: var(--text-main);
+            margin-right: 0.5rem;
+        }
+
+        /* Subroutine Section */
+        .subroutine-section {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 6px;
+        }
+
+        .subroutine-section .sub-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--primary);
+        }
+
+        .subroutine-section .sub-header .sub-icon {
+            font-size: 1rem;
+        }
+
+        .subroutine-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+        }
+
+        .subroutine-table th {
+            padding: 0.4rem 0.75rem;
+            background: rgba(59, 130, 246, 0.08);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.12);
+        }
+
+        .subroutine-table td {
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.08);
+            white-space: nowrap;
+        }
+
+        .subroutine-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .subroutine-loading {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.8rem;
+            padding: 0.5rem 0;
+        }
+
+        .subroutine-empty {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            padding: 0.5rem 0;
+        }
+
+        .sub-bar-container {
+            width: 100%;
+            max-width: 120px;
+            height: 6px;
+            background: rgba(59, 130, 246, 0.12);
+            border-radius: 3px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+
+        .sub-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* Utility Classes */
+        .text-right {
+            text-align: right;
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .font-mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-GET {
+            background-color: var(--get-bg);
+            color: var(--get-color);
+        }
+
+        .badge-POST {
+            background-color: var(--post-bg);
+            color: var(--post-color);
+        }
+
+        .badge-PUT {
+            background-color: var(--put-bg);
+            color: var(--put-color);
+        }
+
+        .badge-DELETE {
+            background-color: var(--delete-bg);
+            color: var(--delete-color);
+        }
+
+        .badge-PATCH {
+            background-color: var(--patch-bg);
+            color: var(--patch-color);
+        }
+
+        /* Rank Badges & Colors */
+        .rank-badge {
+            display: inline-block;
+            margin-left: 0.5rem;
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            vertical-align: middle;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .rank-badge:hover {
+            opacity: 0.8;
+            box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--border-color);
+        }
+
+        .rank-very-good {
+            color: #10b981;
+        }
+
+        .rank-bg-very-good {
+            background-color: #d1fae5;
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .rank-good {
+            color: #3b82f6;
+        }
+
+        .rank-bg-good {
+            background-color: #eff6ff;
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .rank-ok {
+            color: #6b7280;
+        }
+
+        .rank-bg-ok {
+            background-color: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid rgba(107, 114, 128, 0.2);
+        }
+
+        .rank-needs-improvement {
+            color: #f59e0b;
+        }
+
+        .rank-bg-needs-improvement {
+            background-color: #fef3c7;
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .rank-bad {
+            color: #ea580c;
+        }
+
+        .rank-bg-bad {
+            background-color: #ffedd5;
+            color: #ea580c;
+            border: 1px solid rgba(234, 88, 12, 0.2);
+        }
+
+        .rank-nightmare {
+            color: #ef4444;
+        }
+
+        .rank-bg-nightmare {
+            background-color: #fee2e2;
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        [data-theme="dark"] .rank-bg-very-good {
+            background-color: rgba(16, 185, 129, 0.2);
+        }
+
+        [data-theme="dark"] .rank-bg-good {
+            background-color: rgba(59, 130, 246, 0.2);
+        }
+
+        [data-theme="dark"] .rank-bg-ok {
+            background-color: rgba(107, 114, 128, 0.2);
+        }
+
+        [data-theme="dark"] .rank-bg-needs-improvement {
+            background-color: rgba(245, 158, 11, 0.2);
+        }
+
+        [data-theme="dark"] .rank-bg-bad {
+            background-color: rgba(234, 88, 12, 0.2);
+        }
+
+        [data-theme="dark"] .rank-bg-nightmare {
+            background-color: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Sortable Headers */
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 1.8rem !important;
+        }
+
+        th.sortable::after {
+            content: '\2195';
+            position: absolute;
+            right: 0.5rem;
+            opacity: 0.3;
+            font-size: 0.75rem;
+        }
+
+        th.sortable.sort-asc::after {
+            content: '\2191';
+            opacity: 0.8;
+        }
+
+        th.sortable.sort-desc::after {
+            content: '\2193';
+            opacity: 0.8;
+        }
+
+        th.sortable:hover {
+            background-color: var(--border-color);
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .filter-group label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-color);
+            color: var(--text-main);
+            min-width: 120px;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+
+        .filter-bar .btn-filter-clear {
+            align-self: flex-end;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-muted);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .filter-bar .btn-filter-clear:hover {
+            color: var(--text-main);
+            border-color: var(--text-muted);
+        }
+
+        /* ── Hero Header ── */
+        .hero-header {
+            position: relative;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0f2942 70%, #0d1b2e 100%);
+            padding: 1.75rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.18) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
+                radial-gradient(ellipse at 60% 80%, rgba(16, 185, 129, 0.10) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 179, 237, 0.5), rgba(139, 92, 246, 0.4), transparent);
+        }
+
+        .hero-left {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            position: relative;
+        }
+
+        .hero-logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 20px rgba(99, 102, 241, 0.4);
+            animation: logoPulse 3s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes logoPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 20px rgba(99, 102, 241, 0.35);
+            }
+
+            50% {
+                box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 32px rgba(99, 102, 241, 0.6);
+            }
+        }
+
+        .hero-titles {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .hero-wordmark {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(90deg, #93c5fd, #c4b5fd, #6ee7b7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .hero-wordmark span {
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 0.75rem;
+            color: rgba(148, 163, 184, 0.8);
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .hero-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            flex-wrap: wrap;
+        }
+
+        .hero-clock {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.1rem;
+        }
+
+        .hero-clock-time {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: rgba(226, 232, 240, 0.95);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.02em;
+        }
+
+        .hero-clock-date {
+            font-size: 0.7rem;
+            color: rgba(148, 163, 184, 0.7);
+            letter-spacing: 0.04em;
+        }
+
+        .hero-divider {
+            width: 1px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-status {
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 0.4rem 0.9rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(148, 163, 184, 0.9);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.3s;
+        }
+
+        .hero-status.connected {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.35);
+            color: #6ee7b7;
+        }
+
+        .hero-status.connected::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: statusBlink 2s ease-in-out infinite;
+        }
+
+        .hero-status.offline {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: rgba(245, 158, 11, 0.35);
+            color: #fcd34d;
+        }
+
+        .hero-status.offline::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #f59e0b;
+        }
+
+        @keyframes statusBlink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .btn-theme-hero {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(226, 232, 240, 0.85);
+            padding: 0.4rem 0.85rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-theme-hero:hover {
+            background: rgba(255, 255, 255, 0.13);
+            color: #fff;
+        }
+
+        /* ── Hero Header — Light Theme Overrides ── */
+        :root:not([data-theme="dark"]) .hero-header {
+            background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 40%, #f0fdf4 100%);
+            box-shadow: 0 2px 16px rgba(59, 130, 246, 0.1), 0 1px 3px rgba(0,0,0,0.06);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+        }
+        :root:not([data-theme="dark"]) .hero-header::before {
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 55%),
+                radial-gradient(ellipse at 60% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+        }
+        :root:not([data-theme="dark"]) .hero-header::after {
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.25), transparent);
+        }
+        :root:not([data-theme="dark"]) .hero-wordmark {
+            background: linear-gradient(90deg, #1d4ed8, #6d28d9, #065f46);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        :root:not([data-theme="dark"]) .hero-wordmark span {
+            background: linear-gradient(90deg, #4338ca, #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        :root:not([data-theme="dark"]) .hero-subtitle {
+            color: rgba(71, 85, 105, 0.8);
+        }
+        :root:not([data-theme="dark"]) .hero-clock-time {
+            color: #1e293b;
+        }
+        :root:not([data-theme="dark"]) .hero-clock-date {
+            color: rgba(71, 85, 105, 0.7);
+        }
+        :root:not([data-theme="dark"]) .hero-divider {
+            background: rgba(99, 102, 241, 0.2);
+        }
+        :root:not([data-theme="dark"]) .hero-status {
+            background: rgba(99, 102, 241, 0.07);
+            border-color: rgba(99, 102, 241, 0.2);
+            color: #475569;
+        }
+        :root:not([data-theme="dark"]) .hero-status.connected {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #059669;
+        }
+        :root:not([data-theme="dark"]) .hero-status.offline {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.3);
+            color: #b45309;
+        }
+        :root:not([data-theme="dark"]) .btn-theme-hero {
+            background: rgba(99, 102, 241, 0.08);
+            border-color: rgba(99, 102, 241, 0.2);
+            color: #3730a3;
+        }
+        :root:not([data-theme="dark"]) .btn-theme-hero:hover {
+            background: rgba(99, 102, 241, 0.15);
+            color: #1e1b4b;
+        }
+    </style>
+    <script>
+        // Initialize Theme early to prevent flash
+        const savedTheme = localStorage.getItem('horsemetry-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Hero Header -->
+        <header class="hero-header">
+            <div class="hero-left">
+                <div class="hero-logo">🐦‍🔥</div>
+                <div class="hero-titles">
+                    <div class="hero-wordmark">Horse<span>metry</span></div>
+                    <div class="hero-subtitle">API Observability &amp; Telemetry Dashboard</div>
+                </div>
+            </div>
+            <div class="hero-right">
+                <div class="hero-clock">
+                    <div class="hero-clock-time" id="hero-clock-time">--:--:--</div>
+                    <div class="hero-clock-date" id="hero-clock-date">---</div>
+                </div>
+                <div class="hero-divider"></div>
+                <button id="theme-toggle" class="btn-theme-hero" onclick="toggleTheme()">🌙 Dark</button>
+                <div id="status-indicator" class="hero-status">Conectando...</div>
+            </div>
+        </header>
+
+        <!-- Summary Section -->
+        <section class="section">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <h2 class="section-title" style="margin-bottom: 0;">Vis&atilde;o Geral</h2>
+                <div class="legend-container" style="display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.75rem;">
+                    <span class="rank-badge rank-bg-very-good">Excelente &le; 100ms</span>
+                    <span class="rank-badge rank-bg-good">Bom &le; 300ms</span>
+                    <span class="rank-badge rank-bg-ok">Aceit&aacute;vel &le; 500ms</span>
+                    <span class="rank-badge rank-bg-needs-improvement">Aten&ccedil;&atilde;o &le; 750ms</span>
+                    <span class="rank-badge rank-bg-bad">Ruim &le; 1000ms</span>
+                    <span class="rank-badge rank-bg-nightmare">Cr&iacute;tico &gt; 1000ms</span>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">Total de Requisi&ccedil;&otilde;es</div>
+                    <div class="metric-value" id="val-total-reqs">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Tempo M&eacute;dio Global</div>
+                    <div class="metric-value"><span id="val-avg-time">0</span><span class="metric-unit">ms</span><span
+                            id="val-avg-rank" class="rank-badge"></span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Tempo M&aacute;x. Registrado</div>
+                    <div class="metric-value"><span id="val-max-time">0</span><span class="metric-unit">ms</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Taxa de Sucesso</div>
+                    <div class="metric-value"><span id="val-success-rate">0</span><span class="metric-unit">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3 class="metric-title">Requisi&ccedil;&otilde;es por M&eacute;todo</h3>
+                    <div class="chart-container">
+                        <canvas id="methodChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="metric-title">Requisi&ccedil;&otilde;es por Status</h3>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="metric-title">Tempo M&eacute;dio por Recurso (ms)</h3>
+                    <div class="chart-container">
+                        <canvas id="resourceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1.5rem; margin-top: 1.5rem;">
+                <div class="chart-card">
+                    <h3 class="metric-title">Lat&ecirc;ncia ao Longo do Tempo</h3>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="latencyTimeChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="metric-title">Requisi&ccedil;&otilde;es por Minuto</h3>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="rpmChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Method Summary Grid -->
+        <section class="section">
+            <div
+                style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+                <h2 class="section-title" style="margin-bottom: 0;">Performance por M&eacute;todo</h2>
+                <div
+                    style="font-size: 0.8rem; color: var(--text-muted); background: var(--card-bg); padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                    <strong>P95 / P99:</strong> 95% ou 99% das requisi&ccedil;&otilde;es s&atilde;o mais r&aacute;pidas
+                    que este tempo.
+                </div>
+            </div>
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-table="methods" data-key="MethodType">M&eacute;todo</th>
+                            <th class="sortable text-right" data-table="methods" data-key="RequestCount">Total de
+                                Requisi&ccedil;&otilde;es</th>
+                            <th class="sortable text-right" data-table="methods" data-key="AvgDurationMillis">Tempo
+                                M&eacute;dio</th>
+                            <th class="sortable text-right" data-table="methods" data-key="P95DurationMillis">P95</th>
+                            <th class="sortable text-right" data-table="methods" data-key="P99DurationMillis">P99</th>
+                            <th class="sortable text-right" data-table="methods" data-key="ErrorCount">Erros</th>
+                        </tr>
+                    </thead>
+                    <tbody id="method-tbody">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Carregando dados...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Resource Summary Grid -->
+        <section class="section">
+            <div
+                style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+                <h2 class="section-title" style="margin-bottom: 0;">Performance por Recurso</h2>
+                <div
+                    style="font-size: 0.8rem; color: var(--text-muted); background: var(--card-bg); padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                    <strong>P95 / P99:</strong> 95% ou 99% das requisi&ccedil;&otilde;es s&atilde;o mais r&aacute;pidas
+                    que este tempo.
+                </div>
+            </div>
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-table="resources" data-key="MethodType">M&eacute;todo</th>
+                            <th class="sortable" data-table="resources" data-key="Resource">Caminho do Recurso</th>
+                            <th class="sortable text-right" data-table="resources" data-key="RequestCount">Total de
+                                Requisi&ccedil;&otilde;es</th>
+                            <th class="sortable text-right" data-table="resources" data-key="AvgDurationMillis">Tempo
+                                M&eacute;dio</th>
+                            <th class="sortable text-right" data-table="resources" data-key="P95DurationMillis">P95</th>
+                            <th class="sortable text-right" data-table="resources" data-key="P99DurationMillis">P99</th>
+                            <th class="sortable text-right" data-table="resources" data-key="ErrorCount">Erros</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resource-tbody">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Carregando dados...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Top Expensive Requests Grid -->
+        <section class="section">
+            <h2 class="section-title">Top 5 Requisi&ccedil;&otilde;es Mais Lentas (Hist&oacute;rico Geral)</h2>
+            <div class="top-expensive-grid">
+                <div class="table-card" style="display: flex; flex-direction: column; max-height: 420px;">
+                    <table style="flex-shrink: 0;">
+                        <thead>
+                            <tr>
+                                <th>M&eacute;todo</th>
+                                <th>Status</th>
+                                <th>Caminho do Recurso</th>
+                                <th>Data/Hora</th>
+                                <th>Par&acirc;metros (Query)</th>
+                                <th class="text-right">Tempo de Execu&ccedil;&atilde;o</th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div style="overflow-y: auto; flex: 1;">
+                        <table>
+                            <tbody id="expensive-tbody">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Carregando dados...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="chart-card" style="margin-bottom: 0; display: flex; flex-direction: column;">
+                    <h3 class="metric-title">Propor&ccedil;&atilde;o de Tempo (ms)</h3>
+                    <div class="chart-container" style="flex: 1; min-height: 250px;">
+                        <canvas id="expensiveChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Requests Grid -->
+        <section class="section">
+            <h2 class="section-title">Log de Requisi&ccedil;&otilde;es Recentes</h2>
+            <div class="table-card">
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>M&eacute;todo</label>
+                        <select id="filter-method">
+                            <option value="">Todos</option>
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                            <option value="PATCH">PATCH</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Status</label>
+                        <select id="filter-status">
+                            <option value="">Todos</option>
+                            <option value="2xx">2xx (Sucesso)</option>
+                            <option value="3xx">3xx (Redirecionar)</option>
+                            <option value="4xx">4xx (Erro Cliente)</option>
+                            <option value="5xx">5xx (Erro Servidor)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Data (de)</label>
+                        <input type="datetime-local" id="filter-date-from">
+                    </div>
+                    <div class="filter-group">
+                        <label>Data (at&eacute;)</label>
+                        <input type="datetime-local" id="filter-date-to">
+                    </div>
+                    <button onclick="applyFilters()"
+                        style="align-self: flex-end; padding: 0.4rem 1rem; font-size: 0.8rem; border: none; background: var(--primary); color: #fff; border-radius: 4px; cursor: pointer; font-weight: 500;">Aplicar
+                        Filtros</button>
+                    <button class="btn-filter-clear" onclick="clearFilters()">Limpar Filtros</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-table="requests" data-key="MethodType">M&eacute;todo</th>
+                            <th class="sortable" data-table="requests" data-key="StatusCode">Status</th>
+                            <th class="sortable" data-table="requests" data-key="Resource">Caminho do Recurso</th>
+                            <th class="sortable" data-table="requests" data-key="CreateAt">Data/Hora</th>
+                            <th class="sortable text-right" data-table="requests" data-key="DurationMillis">Tempo de
+                                Execu&ccedil;&atilde;o</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requests-tbody">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Carregando dados...</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem;">
+                    <button id="btn-prev-page" class="btn" onclick="prevPage()" disabled
+                        style="padding: 0.5rem 1rem; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); border-radius: 4px; cursor: pointer;">P&aacute;gina
+                        Anterior</button>
+                    <span style="color: var(--text-muted); font-size: 0.875rem;">P&aacute;gina <span
+                            id="val-current-page">1</span></span>
+                    <button id="btn-next-page" class="btn" onclick="nextPage()"
+                        style="padding: 0.5rem 1rem; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); border-radius: 4px; cursor: pointer;">Pr&oacute;xima
+                        P&aacute;gina</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // Use relative paths to current host
+        const ENDPOINT_SUMMARY = '/telemetry/summary-statistics';
+        const ENDPOINT_REQUESTS = '/telemetry/requests';
+        const ENDPOINT_SUBROUTINE = '/telemetry/subroutine';
+        const POLL_INTERVAL = 5000;
+
+        // Cache for subroutine data to avoid redundant fetches
+        const subroutineCache = {};
+        let pollTimer = null;
+
+        let currentPage = 1;
+        const limitPerPage = 50;
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                document.getElementById('val-current-page').textContent = currentPage;
+                document.getElementById('btn-prev-page').disabled = currentPage <= 1;
+                console.log('[Horsemetry] Navigating to page', currentPage);
+                fetchAPI();
+            }
+        }
+        function nextPage() {
+            currentPage++;
+            document.getElementById('val-current-page').textContent = currentPage;
+            document.getElementById('btn-prev-page').disabled = currentPage <= 1;
+            console.log('[Horsemetry] Navigating to page', currentPage);
+            fetchAPI();
+        }
+        // --- Filter & Sort State ---
+        let lastRequests = []; // cached raw data for re-filtering
+        let lastSummary = null;
+        let sortState = {}; // { tableId: { key, dir } }
+
+        function applyFilters() { renderRecentRequests(lastRequests); }
+        function clearFilters() {
+            document.getElementById('filter-method').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-date-from').value = '';
+            document.getElementById('filter-date-to').value = '';
+            applyFilters();
+        }
+        function getFilteredRequests(data) {
+            let filtered = [...data];
+            const method = document.getElementById('filter-method').value;
+            const status = document.getElementById('filter-status').value;
+            const dateFrom = document.getElementById('filter-date-from').value;
+            const dateTo = document.getElementById('filter-date-to').value;
+            if (method) filtered = filtered.filter(r => r.MethodType === method);
+            if (status) {
+                const base = parseInt(status.charAt(0)) * 100;
+                filtered = filtered.filter(r => r.StatusCode >= base && r.StatusCode < base + 100);
+            }
+            if (dateFrom) { const d = new Date(dateFrom); filtered = filtered.filter(r => new Date(r.CreateAt) >= d); }
+            if (dateTo) { const d = new Date(dateTo); filtered = filtered.filter(r => new Date(r.CreateAt) <= d); }
+            return filtered;
+        }
+
+        function sortData(arr, key, dir) {
+            return [...arr].sort((a, b) => {
+                let va = a[key], vb = b[key];
+                if (key === 'CreateAt') { va = new Date(va || 0).getTime(); vb = new Date(vb || 0).getTime(); }
+                if (typeof va === 'string') return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+                return dir === 'asc' ? (va || 0) - (vb || 0) : (vb || 0) - (va || 0);
+            });
+        }
+
+        function handleSort(th) {
+            const tableId = th.dataset.table;
+            const key = th.dataset.key;
+            const cur = sortState[tableId];
+            let dir = 'asc';
+            if (cur && cur.key === key) dir = cur.dir === 'asc' ? 'desc' : 'asc';
+            sortState[tableId] = { key, dir };
+            // Update header indicators
+            th.closest('thead').querySelectorAll('th.sortable').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+            th.classList.add('sort-' + dir);
+            // Re-render the affected table
+            if (tableId === 'requests') renderRecentRequests(lastRequests);
+            else if (lastSummary) updateSortableTable(tableId, lastSummary);
+        }
+
+        // Chart instances
+        let methodChart = null;
+        let statusChart = null;
+        let resourceChart = null;
+        let latencyTimeChart = null;
+        let expensiveChart = null;
+        let rpmChart = null;
+
+        // Method colors mapping for charts
+        const methodColors = {
+            'GET': '#3b82f6',
+            'POST': '#10b981',
+            'PUT': '#f59e0b',
+            'DELETE': '#ef4444',
+            'PATCH': '#8b5cf6',
+            'DEFAULT': '#6b7280'
+        };
+
+        function initCharts() {
+            const ctxMethod = document.getElementById('methodChart').getContext('2d');
+            methodChart = new Chart(ctxMethod, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    cutout: '70%'
+                }
+            });
+
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    cutout: '70%'
+                }
+            });
+
+            const ctxResource = document.getElementById('resourceChart').getContext('2d');
+            resourceChart = new Chart(ctxResource, {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'Avg Time (ms)', data: [], backgroundColor: '#3b82f6', borderRadius: 4 }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { border: { display: false }, grid: { color: 'rgba(107, 114, 128, 0.1)' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            const ctxLatency = document.getElementById('latencyTimeChart').getContext('2d');
+            latencyTimeChart = new Chart(ctxLatency, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Latency (ms)', data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 2 }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: true },
+                        y: { border: { display: false }, grid: { color: 'rgba(107, 114, 128, 0.1)' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            const ctxExpensive = document.getElementById('expensiveChart').getContext('2d');
+            expensiveChart = new Chart(ctxExpensive, {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'Tempo (ms)', data: [], backgroundColor: '#ef4444', borderRadius: 4 }] },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { border: { display: false }, grid: { color: 'rgba(107, 114, 128, 0.1)' }, beginAtZero: true },
+                        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+
+            const ctxRpm = document.getElementById('rpmChart').getContext('2d');
+            rpmChart = new Chart(ctxRpm, {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'Requisições', data: [], backgroundColor: '#6366f1', borderRadius: 4 }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { border: { display: false }, grid: { color: 'rgba(107, 114, 128, 0.1)' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Ranking scale for execution times
+        function getRank(ms) {
+            if (ms <= 100) return { label: 'Excelente', textClass: 'rank-very-good', bgClass: 'rank-bg-very-good' };
+            if (ms <= 300) return { label: 'Bom', textClass: 'rank-good', bgClass: 'rank-bg-good' };
+            if (ms <= 500) return { label: 'Aceit&aacute;vel', textClass: 'rank-ok', bgClass: 'rank-bg-ok' };
+            if (ms <= 750) return { label: 'Aten&ccedil;&atilde;o', textClass: 'rank-needs-improvement', bgClass: 'rank-bg-needs-improvement' };
+            if (ms <= 1000) return { label: 'Ruim', textClass: 'rank-bad', bgClass: 'rank-bg-bad' };
+            return { label: 'Cr&iacute;tico', textClass: 'rank-nightmare', bgClass: 'rank-bg-nightmare' };
+        }
+
+        function formatDate(isoString) {
+            if (!isoString) return '-';
+            const date = new Date(isoString);
+            return date.toLocaleTimeString() + ' · ' + date.toLocaleDateString();
+        }
+
+        function updateUI(summary, requests, isMock = false) {
+            // Update Connection Status
+            const statusEl = document.getElementById('status-indicator');
+            if (isMock) {
+                statusEl.textContent = 'Offline (Dados de Teste)';
+                statusEl.className = 'hero-status offline';
+            } else {
+                statusEl.textContent = 'Conectado';
+                statusEl.className = 'hero-status connected';
+            }
+
+            // 1. Overview Metrics
+            let totalReqs = 0;
+            let sumTimes = 0;
+            let maxTime = 0;
+            let activeRes = summary.ResourceSummaryStatistics ? summary.ResourceSummaryStatistics.length : 0;
+
+            const methodsData = summary.MethodTypeSummaryStatistics || [];
+            methodsData.forEach(m => {
+                totalReqs += m.RequestCount;
+                sumTimes += (m.AvgDurationMillis * m.RequestCount);
+                if (m.MaxDurationMillis > maxTime) maxTime = m.MaxDurationMillis;
+            });
+            const globalAvg = totalReqs > 0 ? Math.round(sumTimes / totalReqs) : 0;
+            const globalRank = getRank(globalAvg);
+
+            document.getElementById('val-total-reqs').textContent = totalReqs.toLocaleString();
+            document.getElementById('val-avg-time').textContent = globalAvg;
+
+            const avgRankEl = document.getElementById('val-avg-rank');
+            avgRankEl.innerHTML = globalRank.label;
+            avgRankEl.className = 'rank-badge ' + globalRank.bgClass;
+
+            document.getElementById('val-max-time').textContent = maxTime;
+
+            // New Global Statistics
+            const globStats = summary.GlobalStatistics || {};
+            const totalSuccess = globStats.TotalSuccess || 0;
+            const totalErrors = globStats.TotalErrors || 0;
+
+            let successRate = 100;
+            if ((totalSuccess + totalErrors) > 0) {
+                successRate = ((totalSuccess / (totalSuccess + totalErrors)) * 100).toFixed(1);
+            }
+
+            document.getElementById('val-success-rate').textContent = successRate;
+
+            // 2. Charts
+            if (methodsData.length > 0) {
+                methodChart.data.labels = methodsData.map(m => m.MethodType);
+                methodChart.data.datasets[0].data = methodsData.map(m => m.RequestCount);
+                methodChart.data.datasets[0].backgroundColor = methodsData.map(m => methodColors[m.MethodType] || methodColors['DEFAULT']);
+                methodChart.update();
+            }
+
+            const statusData = summary.StatusCodeSummaryStatistics || [];
+            if (statusData.length > 0) {
+                statusChart.data.labels = statusData.map(s => s.StatusCode);
+                statusChart.data.datasets[0].data = statusData.map(s => s.RequestCount);
+                statusChart.data.datasets[0].backgroundColor = statusData.map(s => {
+                    if (s.StatusCode >= 200 && s.StatusCode < 300) return '#10b981';
+                    if (s.StatusCode >= 300 && s.StatusCode < 400) return '#3b82f6';
+                    if (s.StatusCode >= 400 && s.StatusCode < 500) return '#f59e0b';
+                    return '#ef4444';
+                });
+                statusChart.update();
+            }
+
+            const resData = summary.ResourceSummaryStatistics || [];
+            if (resData.length > 0) {
+                // Take top 10 most requested for the bar chart
+                const topResources = [...resData].sort((a, b) => b.RequestCount - a.RequestCount).slice(0, 10);
+                resourceChart.data.labels = topResources.map(r => `[${r.MethodType}] ${r.Resource}`);
+                resourceChart.data.datasets[0].data = topResources.map(r => r.AvgDurationMillis);
+                resourceChart.update();
+            }
+
+            if (requests && requests.length > 0) {
+                const timelineData = [...requests].reverse();
+                latencyTimeChart.data.labels = timelineData.map(r => {
+                    const d = new Date(r.CreateAt);
+                    return d.getHours().toString().padStart(2, '0') + ':' +
+                        d.getMinutes().toString().padStart(2, '0') + ':' +
+                        d.getSeconds().toString().padStart(2, '0');
+                });
+                latencyTimeChart.data.datasets[0].data = timelineData.map(r => r.DurationMillis);
+                latencyTimeChart.update();
+            }
+
+            if (rpmChart && summary.RequestsPerMinute) {
+                const rpmData = summary.RequestsPerMinute;
+                rpmChart.data.labels = rpmData.map(r => {
+                    const d = new Date(r.MinuteBucket);
+                    return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                });
+                rpmChart.data.datasets[0].data = rpmData.map(r => r.RequestCount);
+                rpmChart.update();
+            }
+
+            // 2.5 Method Summary Table
+            renderMethodTable(methodsData);
+
+            // 3. Resource Summary Table
+            renderResourceTable(resData);
+
+            // Populate Top Expensive Requests Table
+            const expTbody = document.getElementById('expensive-tbody');
+            if (expTbody && summary.TopExpensiveRequests) {
+                const expData = summary.TopExpensiveRequests;
+                // Preserve open expensive rows
+                const openExpDetails = new Set();
+                expTbody.querySelectorAll('.details-row.open').forEach(row => openExpDetails.add(row.id));
+                expTbody.innerHTML = '';
+                if (expData.length > 0) {
+                    // Update the expensive requests chart
+                    if (expensiveChart) {
+                        expensiveChart.data.labels = expData.map(req => {
+                            let path = req.Resource;
+                            if (path.length > 20) path = path.substring(0, 17) + '...';
+                            return `[${req.MethodType}] ${path}`;
+                        });
+                        expensiveChart.data.datasets[0].data = expData.map(req => req.DurationMillis);
+                        expensiveChart.update();
+                    }
+
+                    expData.forEach((req, idx) => {
+                        const expRowId = 'exp-details-' + (req.ContextId || 'exp-' + idx);
+                        const isExpOpen = openExpDetails.has(expRowId) ? 'open' : '';
+                        expTbody.innerHTML += `
+                            <tr class="expandable-row" onclick="toggleExpensiveDetails('${expRowId}', '${req.ContextId || ''}')">
+                                <td><span class="badge badge-${req.MethodType}">${req.MethodType}</span></td>
+                                <td><span style="color: ${req.StatusCode >= 400 ? 'var(--delete-color)' : 'var(--post-color)'}; font-weight: 600;">${req.StatusCode || 200}</span></td>
+                                <td class="font-mono text-muted" title="${req.Resource}">${req.Resource.length > 30 ? req.Resource.substring(0, 27) + '...' : req.Resource}</td>
+                                <td class="text-muted" style="font-size: 0.8rem;">${formatDate(req.CreateAt)}</td>
+                                <td><span style="color:var(--primary)" title="${req.Queries || ''}">${req.Queries ? '?' + (req.Queries.length > 20 ? req.Queries.substring(0, 17) + '...' : req.Queries) : 'None'}</span></td>
+                                <td class="text-right font-mono ${getRank(req.DurationMillis).textClass}">${req.DurationMillis}ms <span class="rank-badge ${getRank(req.DurationMillis).bgClass}">${getRank(req.DurationMillis).label}</span></td>
+                            </tr>
+                            <tr id="${expRowId}" class="details-row ${isExpOpen}">
+                                <td colspan="6" style="padding: 0; border: none;">
+                                    <div class="details-content">
+                                        <div style="margin-bottom: 0.5rem;"><strong>Context ID:</strong> ${req.ContextId || '-'}</div>
+                                        <div style="margin-bottom: 0.5rem;"><strong>Queries:</strong> <span style="color:var(--primary)">${req.Queries ? '?' + req.Queries : 'None'}</span></div>
+                                        ${req.ResponseBody ? `<div style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px;"><strong style="color: var(--delete-color);">&#9888; Resposta do Servidor (5XX):</strong><pre style="margin: 0.5rem 0 0 0; white-space: pre-wrap; word-break: break-all; font-size: 0.8rem; color: var(--text-main);">${req.ResponseBody}</pre></div>` : ''}
+                                        <div id="sub-${expRowId}" class="subroutine-section">
+                                            <div class="sub-header"><span class="sub-icon">⚡</span> Sub-Rotinas</div>
+                                            <div class="subroutine-loading">Clique para carregar sub-rotinas...</div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    // Re-load subroutines for expensive rows that were open before re-render
+                    reloadSubroutinesForOpenRows(expTbody);
+                } else {
+                    expTbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">Nenhuma requisi&ccedil;&atilde;o lenta registrada.</td></tr>';
+                }
+            }
+
+            // 4. Cache and render recent requests
+            lastRequests = requests || [];
+            lastSummary = summary;
+            renderRecentRequests(lastRequests);
+        }
+
+        function renderRecentRequests(rawRequests) {
+            const reqTbody = document.getElementById('requests-tbody');
+            document.getElementById('val-current-page').textContent = currentPage;
+            document.getElementById('btn-prev-page').disabled = currentPage <= 1;
+            document.getElementById('btn-next-page').disabled = (!rawRequests || rawRequests.length < limitPerPage);
+
+            const openDetails = new Set();
+            reqTbody.querySelectorAll('.details-row.open').forEach(row => openDetails.add(row.id));
+
+            let filtered = rawRequests && rawRequests.length > 0 ? getFilteredRequests(rawRequests) : [];
+            const ss = sortState['requests'];
+            if (ss) { filtered = sortData(filtered, ss.key, ss.dir); }
+            else { filtered = [...filtered].sort((a, b) => new Date(b.CreateAt) - new Date(a.CreateAt)); }
+
+            if (filtered.length > 0) {
+                let newHtml = '';
+                filtered.forEach(req => {
+                    const rowId = 'req-details-' + (req.ContextId || Math.random().toString(36).substr(2, 9));
+                    const isOpen = openDetails.has(rowId) ? 'open' : '';
+                    newHtml += `
+                        <tr class="expandable-row" onclick="toggleReqDetails('${rowId}', '${req.ContextId || ''}')">
+                            <td><span class="badge badge-${req.MethodType}">${req.MethodType}</span></td>
+                            <td><span style="color: ${req.StatusCode >= 400 ? 'var(--delete-color)' : 'var(--post-color)'}; font-weight: 600;">${req.StatusCode || 200}</span></td>
+                            <td class="font-mono">${req.Resource}</td>
+                            <td class="text-muted" style="font-size: 0.8rem;">${formatDate(req.CreateAt)}</td>
+                            <td class="text-right font-mono ${getRank(req.DurationMillis).textClass}">${req.DurationMillis}ms <span class="rank-badge ${getRank(req.DurationMillis).bgClass}">${getRank(req.DurationMillis).label}</span></td>
+                        </tr>
+                        <tr id="${rowId}" class="details-row ${isOpen}">
+                            <td colspan="5" style="padding: 0; border: none;">
+                                <div class="details-content">
+                                    <div style="margin-bottom: 0.5rem;"><strong>Context ID:</strong> ${req.ContextId || '-'}</div>
+                                    <div style="margin-bottom: 0.5rem;"><strong>Queries:</strong> <span style="color:var(--primary)">${req.Queries ? '?' + req.Queries : 'None'}</span></div>
+                                    ${req.ResponseBody ? `<div style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px;"><strong style="color: var(--delete-color);">&#9888; Resposta do Servidor (5XX):</strong><pre style="margin: 0.5rem 0 0 0; white-space: pre-wrap; word-break: break-all; font-size: 0.8rem; color: var(--text-main);">${req.ResponseBody}</pre></div>` : ''}
+                                    <div id="sub-${rowId}" class="subroutine-section">
+                                        <div class="sub-header"><span class="sub-icon">⚡</span> Sub-Rotinas</div>
+                                        <div class="subroutine-loading">Carregando sub-rotinas...</div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                reqTbody.innerHTML = newHtml;
+                // Re-load subroutines for rows that were open before re-render
+                reloadSubroutinesForOpenRows(reqTbody);
+            } else {
+                reqTbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">Nenhuma requisi&ccedil;&atilde;o encontrada.</td></tr>';
+            }
+        }
+
+        function renderMethodTable(data) {
+            const tbody = document.getElementById('method-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">Nenhum dado dispon&iacute;vel.</td></tr>'; return; }
+            let sorted = [...data];
+            const ss = sortState['methods'];
+            sorted = ss ? sortData(sorted, ss.key, ss.dir) : sorted.sort((a, b) => b.RequestCount - a.RequestCount);
+            sorted.forEach(m => {
+                tbody.innerHTML += `<tr>
+                    <td><span class="badge badge-${m.MethodType}">${m.MethodType}</span></td>
+                    <td class="text-right">${m.RequestCount.toLocaleString()}</td>
+                    <td class="text-right ${getRank(m.AvgDurationMillis).textClass}">${m.AvgDurationMillis}ms <span class="rank-badge ${getRank(m.AvgDurationMillis).bgClass}">${getRank(m.AvgDurationMillis).label}</span></td>
+                    <td class="text-right text-muted">${m.P95DurationMillis !== undefined ? m.P95DurationMillis : '-'}ms</td>
+                    <td class="text-right text-muted">${m.P99DurationMillis !== undefined ? m.P99DurationMillis : '-'}ms</td>
+                    <td class="text-right" style="color: ${m.ErrorCount > 0 ? 'var(--delete-color)' : 'inherit'}">${m.ErrorCount || 0}</td>
+                </tr>`;
+            });
+        }
+
+        function renderResourceTable(data) {
+            const tbody = document.getElementById('resource-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center">Nenhum recurso dispon&iacute;vel.</td></tr>'; return; }
+            let sorted = [...data];
+            const ss = sortState['resources'];
+            sorted = ss ? sortData(sorted, ss.key, ss.dir) : sorted.sort((a, b) => b.AvgDurationMillis - a.AvgDurationMillis);
+            sorted.forEach(r => {
+                tbody.innerHTML += `<tr>
+                    <td><span class="badge badge-${r.MethodType}">${r.MethodType}</span></td>
+                    <td class="font-mono text-muted">${r.Resource}</td>
+                    <td class="text-right">${r.RequestCount.toLocaleString()}</td>
+                    <td class="text-right ${getRank(r.AvgDurationMillis).textClass}">${r.AvgDurationMillis}ms <span class="rank-badge ${getRank(r.AvgDurationMillis).bgClass}">${getRank(r.AvgDurationMillis).label}</span></td>
+                    <td class="text-right text-muted">${r.P95DurationMillis !== undefined ? r.P95DurationMillis : '-'}ms</td>
+                    <td class="text-right text-muted">${r.P99DurationMillis !== undefined ? r.P99DurationMillis : '-'}ms</td>
+                    <td class="text-right" style="color: ${r.ErrorCount > 0 ? 'var(--delete-color)' : 'inherit'}">${r.ErrorCount || 0}</td>
+                </tr>`;
+            });
+        }
+
+        function updateSortableTable(tableId, summary) {
+            if (tableId === 'methods') renderMethodTable(summary.MethodTypeSummaryStatistics || []);
+            else if (tableId === 'resources') renderResourceTable(summary.ResourceSummaryStatistics || []);
+        }
+
+        // Re-render subroutines for open rows after a re-render (uses cache, no extra fetch)
+        function reloadSubroutinesForOpenRows(tbody) {
+            tbody.querySelectorAll('.details-row.open').forEach(async row => {
+                const subContainer = row.querySelector('.subroutine-section');
+                if (!subContainer) return;
+                // Extract contextId from the expandable-row onclick
+                const expandableRow = row.previousElementSibling;
+                if (!expandableRow) return;
+                const onclickAttr = expandableRow.getAttribute('onclick') || '';
+                const match = onclickAttr.match(/'([^']*)',\s*'([^']*)'/);
+                const contextId = match ? match[2] : '';
+                if (!contextId) return;
+                const containerId = subContainer.id;
+                if (!containerId) return;
+                // Use cache for instant re-render; fetch if not cached yet
+                const subs = await fetchSubroutines(contextId);
+                subContainer.dataset.loaded = 'true';
+                renderSubroutines(containerId, subs);
+            });
+        }
+
+        // Demo Data Fallback
+        const demoSummary = {
+            "GlobalStatistics": {
+                "UniqueContextsCount": 142,
+                "TotalErrors": 1,
+                "TotalSuccess": 52
+            },
+            "StatusCodeSummaryStatistics": [
+                { "StatusCode": 200, "RequestCount": 52 },
+                { "StatusCode": 404, "RequestCount": 1 }
+            ],
+            "MethodTypeSummaryStatistics": [
+                { "MethodType": "GET", "RequestCount": 41, "MinDurationMillis": 6, "MaxDurationMillis": 127, "AvgDurationMillis": 52, "P95DurationMillis": 98, "P99DurationMillis": 120, "ErrorCount": 1 },
+                { "MethodType": "POST", "RequestCount": 12, "MinDurationMillis": 10, "MaxDurationMillis": 250, "AvgDurationMillis": 85, "P95DurationMillis": 190, "P99DurationMillis": 240, "ErrorCount": 0 }
+            ],
+            "ResourceSummaryStatistics": [
+                { "MethodType": "GET", "Resource": "/hello-world", "RequestCount": 25, "AvgDurationMillis": 54, "P95DurationMillis": 95, "P99DurationMillis": 115, "ErrorCount": 0 },
+                { "MethodType": "GET", "Resource": "/hm-summary-statistics", "RequestCount": 1, "AvgDurationMillis": 52, "P95DurationMillis": 52, "P99DurationMillis": 52, "ErrorCount": 0 },
+                { "MethodType": "GET", "Resource": "/telemetry-statistics", "RequestCount": 15, "AvgDurationMillis": 47, "P95DurationMillis": 85, "P99DurationMillis": 92, "ErrorCount": 1 },
+                { "MethodType": "POST", "Resource": "/users/create", "RequestCount": 12, "AvgDurationMillis": 85, "P95DurationMillis": 190, "P99DurationMillis": 240, "ErrorCount": 0 }
+            ]
+        };
+        const demoRequests = [
+            { "MethodType": "GET", "StatusCode": 200, "Resource": "/telemetry/requests", "DurationMillis": 41, "ContextId": "1062fe94-a1ff-4aa5-ac1f-29dca3ac616f", "Queries": "", "CreateAt": new Date().toISOString() },
+            { "MethodType": "POST", "StatusCode": 200, "Resource": "/users/create", "DurationMillis": 250, "ContextId": "7a3f27ab-d753-4eff-ba2b-07c070054d72", "Queries": "limit=10", "CreateAt": new Date(Date.now() - 2000).toISOString() },
+            { "MethodType": "GET", "StatusCode": 200, "Resource": "/hello-world", "DurationMillis": 15, "ContextId": "8b3f27ab-d753-4eff-ba2b-07c070054d73", "Queries": "", "CreateAt": new Date(Date.now() - 5000).toISOString() },
+            { "MethodType": "GET", "StatusCode": 404, "Resource": "/telemetry-statistics", "DurationMillis": 55, "ContextId": "9c3f27ab-d753-4eff-ba2b-07c070054d74", "Queries": "", "CreateAt": new Date(Date.now() - 10000).toISOString() }
+        ];
+
+        async function fetchAPI() {
+            try {
+                // Fetch from the exact endpoints
+                const reqUrl = ENDPOINT_REQUESTS + '?page=' + currentPage;
+                console.log('[Horsemetry] Fetching:', ENDPOINT_SUMMARY, reqUrl);
+                const [resSummary, resRequests] = await Promise.allSettled([
+                    fetch(ENDPOINT_SUMMARY),
+                    fetch(reqUrl)
+                ]);
+
+                let sumData = null;
+                let reqData = null;
+
+                if (resSummary.status === 'fulfilled' && resSummary.value.ok) {
+                    sumData = await resSummary.value.json();
+                }
+                if (resRequests.status === 'fulfilled' && resRequests.value.ok) {
+                    reqData = await resRequests.value.json();
+                }
+
+                if (sumData && reqData) {
+                    updateUI(sumData, reqData, false);
+                } else {
+                    // Fallback to Demo Mode if fetch fails (e.g. running from file://)
+                    updateUI(demoSummary, demoRequests, true);
+                }
+            } catch (error) {
+                console.warn("Fetch failed, using demo data.", error);
+                updateUI(demoSummary, demoRequests, true);
+            }
+        }
+
+        // Theme Handling
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('horsemetry-theme', newTheme);
+
+            const btn = document.getElementById('theme-toggle');
+            btn.innerHTML = newTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+        }
+
+        // Live Clock
+        function tickClock() {
+            const now = new Date();
+            const timeEl = document.getElementById('hero-clock-time');
+            const dateEl = document.getElementById('hero-clock-date');
+            if (timeEl) timeEl.textContent = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            if (dateEl) dateEl.textContent = now.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const btn = document.getElementById('theme-toggle');
+            if (btn) btn.innerHTML = current === 'dark' ? '☀️ Light' : '🌙 Dark';
+            tickClock();
+            setInterval(tickClock, 1000);
+        });
+
+        // Modal Handling via Event Delegation
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('rank-badge')) {
+                document.getElementById('rankModal').style.display = 'flex';
+            }
+        });
+
+        // Close modal when clicking outside of it
+        const modal = document.getElementById('rankModal');
+        if (modal) {
+            modal.addEventListener('click', function (e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
+                }
+            });
+        }
+
+        // --- Subroutine Fetch & Render ---
+        async function fetchSubroutines(contextId) {
+            if (!contextId || contextId === '-') return [];
+            if (subroutineCache[contextId]) return subroutineCache[contextId];
+            try {
+                const res = await fetch(`${ENDPOINT_SUBROUTINE}/${contextId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    subroutineCache[contextId] = data || [];
+                    return subroutineCache[contextId];
+                }
+            } catch (e) {
+                console.warn('[Horsemetry] Failed to fetch subroutines for', contextId, e);
+            }
+            return [];
+        }
+
+        function renderSubroutines(containerId, subroutines) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const headerHtml = '<div class="sub-header"><span class="sub-icon">⚡</span> Sub-Rotinas</div>';
+            if (!subroutines || subroutines.length === 0) {
+                container.innerHTML = headerHtml + '<div class="subroutine-empty">Nenhuma sub-rotina registrada para esta requisição.</div>';
+                return;
+            }
+            const maxDuration = Math.max(...subroutines.map(s => s.DurationMillis));
+            let tableHtml = `<table class="subroutine-table">
+                <thead><tr>
+                    <th>Nome</th>
+                    <th class="text-right">Duração</th>
+                    <th>Proporção</th>
+                </tr></thead><tbody>`;
+            subroutines.forEach(sub => {
+                const rank = getRank(sub.DurationMillis);
+                const pct = maxDuration > 0 ? Math.round((sub.DurationMillis / maxDuration) * 100) : 0;
+                const barColor = sub.DurationMillis <= 100 ? '#10b981' :
+                    sub.DurationMillis <= 300 ? '#3b82f6' :
+                        sub.DurationMillis <= 500 ? '#6b7280' :
+                            sub.DurationMillis <= 750 ? '#f59e0b' :
+                                sub.DurationMillis <= 1000 ? '#ea580c' : '#ef4444';
+                tableHtml += `<tr>
+                    <td class="font-mono">${sub.Name}</td>
+                    <td class="text-right font-mono ${rank.textClass}">${sub.DurationMillis}ms</td>
+                    <td><div class="sub-bar-container"><div class="sub-bar-fill" style="width:${pct}%; background:${barColor};"></div></div></td>
+                </tr>`;
+            });
+            tableHtml += '</tbody></table>';
+            container.innerHTML = headerHtml + tableHtml;
+        }
+
+        async function toggleReqDetails(rowId, contextId) {
+            const row = document.getElementById(rowId);
+            if (!row) return;
+            const isOpening = !row.classList.contains('open');
+            row.classList.toggle('open');
+            if (isOpening && contextId) {
+                const subContainerId = 'sub-' + rowId;
+                const subContainer = document.getElementById(subContainerId);
+                if (subContainer && !subContainer.dataset.loaded) {
+                    subContainer.dataset.loaded = 'true';
+                    const subs = await fetchSubroutines(contextId);
+                    renderSubroutines(subContainerId, subs);
+                }
+            }
+        }
+
+        async function toggleExpensiveDetails(rowId, contextId) {
+            const row = document.getElementById(rowId);
+            if (!row) return;
+            const isOpening = !row.classList.contains('open');
+            row.classList.toggle('open');
+            if (isOpening && contextId) {
+                const subContainerId = 'sub-' + rowId;
+                const subContainer = document.getElementById(subContainerId);
+                if (subContainer && !subContainer.dataset.loaded) {
+                    subContainer.dataset.loaded = 'true';
+                    const subs = await fetchSubroutines(contextId);
+                    renderSubroutines(subContainerId, subs);
+                }
+            }
+        }
+
+        // Bootstrap
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            fetchAPI();
+            pollTimer = setInterval(fetchAPI, POLL_INTERVAL);
+
+            // Sortable column click handler (event delegation)
+            document.addEventListener('click', function (e) {
+                const th = e.target.closest('th.sortable');
+                if (th) handleSort(th);
+            });
+        });
+    </script>
+
+    <!-- Rank Modal -->
+    <div id="rankModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; backdrop-filter: blur(2px);">
+        <div
+            style="background:var(--card-bg); padding:2rem; border-radius:8px; max-width:450px; width:90%; border: 1px solid var(--border-color); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+            <h3 style="margin-bottom: 1rem; color: var(--text-main);">Entenda as Classifica&ccedil;&otilde;es de
+                Performance</h3>
+            <p style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.9rem;">
+                O dashboard classifica automaticamente os tempos de resposta da sua API em seis n&iacute;veis de
+                performance para ajudar a identificar gargalos:
+            </p>
+            <div
+                style="display: flex; flex-direction: column; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem;">
+                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-very-good"
+                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Excelente</span>
+                    <span>&le; 100ms. Tempo de resposta &oacute;timo.</span></div>
+                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-good"
+                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Bom</span>
+                    <span>&le; 300ms. Tempo de resposta aceitável.</span></div>
+                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-ok"
+                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Aceit&aacute;vel</span>
+                    <span>&le; 500ms. Dentro da m&eacute;dia, potencial de melhoria.</span></div>
+                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-needs-improvement"
+                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Aten&ccedil;&atilde;o</span>
+                    <span>&le; 750ms. Resposta lenta detectada.</span></div>
+                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-bad"
+                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Ruim</span>
+                    <span>&le; 1000ms. Alta lat&ecirc;ncia detectada.</span></div>
+                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-nightmare"
+                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Cr&iacute;tico</span>
+                    <span>&gt; 1000ms. Gargalo crítico de performance.</span></div>
+            </div>
+            <div style="text-align: right; margin-top: 2rem;">
+                <button onclick="document.getElementById('rankModal').style.display='none'"
+                    style="padding: 0.5rem 1.5rem; border: none; background: var(--primary); color: white; border-radius: 4px; cursor: pointer; font-weight: 500;">Fechar</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
