@@ -4,6 +4,10 @@
 
 Horsemetry é uma poderosa biblioteca de observabilidade e telemetria para o framework [Horse](https://github.com/HashLoad/horse). Ela injeta superpoderes analíticos na sua aplicação Delphi, oferecendo um painel visual deslumbrante e insights em tempo real sobre a saúde e a performance dos seus endpoints.
 
+<p align="center">
+<img width="804" height="881" alt="image" src="https://github.com/user-attachments/assets/ba8c0c8c-7501-4c17-891b-101a4173571c" />
+</P>
+
 Deixe de "achar" que sua API está rápida e passe a ter certeza absoluta!
 
 ---
