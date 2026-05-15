@@ -13,6 +13,7 @@ uses
   Horsemetry.DataStore,
   Horsemetry.DTO.SubRoutine,
   Horsemetry.DTO.Statistics,
+  Horsemetry.DataStore.Filter,
   Horsemetry.Command.Types;
 
 type
@@ -41,19 +42,20 @@ type
       FConnection: TFDConnection;
       FDriverLink: TFDPhysPgDriverLink;
     private
-      procedure GetGlobalStatistics(var Stat: TGlobalStatistics);
-      procedure GetStatusCodeSummaryStat(var Stat: TArray<TStatusCodeSummaryStat>);
-      procedure GetMethodTypeSummaryStat(var Stat: TArray<TMethodTypeSummaryStat>);
-      procedure GetResourceSummaryStat(var Stat: TArray<TResourceSummaryStat>);
-      procedure GetTopExpensiveRequests(var Stat: TArray<TResource>);
-      procedure GetRequestsPerMinute(var Stat: TArray<TRequestsPerMinuteStat>);
+      procedure GetGlobalStatistics(var Stat: TGlobalStatistics; const Filter: TDataStoreFilter);
+      procedure GetStatusCodeSummaryStat(var Stat: TArray<TStatusCodeSummaryStat>; const Filter: TDataStoreFilter);
+      procedure GetMethodTypeSummaryStat(var Stat: TArray<TMethodTypeSummaryStat>; const Filter: TDataStoreFilter);
+      procedure GetResourceSummaryStat(var Stat: TArray<TResourceSummaryStat>; const Filter: TDataStoreFilter);
+      procedure GetTopExpensiveRequests(var Stat: TArray<TResource>; const Filter: TDataStoreFilter);
+      procedure GetRequestsPerMinute(var Stat: TArray<TRequestsPerMinuteStat>; const Filter: TDataStoreFilter);
       procedure SetPGSearchPath(const Schema: String);
+      procedure ApplyDateFilter(const lQuery: TFDQuery; const Filter: TDataStoreFilter; const TableAlias: String = '');
     public
-      function GetResources(out Resources: TResourceList; const Page: Integer = 1; const Limit: Integer = 50): Boolean;
+      function GetResources(out Resources: TResourceList; const Filter: TDataStoreFilter): Boolean;
       procedure PersistRequest(const Command: TNewRequestDataCommand);
       procedure PersistSubRoutine(const Command: TNewSubRoutineDataCommand);
-      procedure GetAllSubRoutinesByContextId(const ContextId: String; var SubRoutineList: TSubRoutineList);
-      function GetStatistics(out Statistics: TStatistics): Boolean;
+      procedure GetAllSubRoutinesByContextId(var SubRoutineList: TSubRoutineList; const Filter: TDataStoreFilter);
+      function GetStatistics(out Statistics: TStatistics; const Filter: TDataStoreFilter): Boolean;
       procedure CleanUp();
     public
       constructor Create(
@@ -100,7 +102,7 @@ begin
 end;
 
 procedure TPostgreSQLDataStore.GetAllSubRoutinesByContextId(
-  const ContextId: String; var SubRoutineList: TSubRoutineList);
+  var SubRoutineList: TSubRoutineList; const Filter: TDataStoreFilter);
 var
   I: Integer;
   lQuery: TFDQuery;
@@ -112,7 +114,7 @@ begin
     lQuery.SQL.Add('SELECT Name, Context_Id, Duration_Millis');
     lQuery.SQL.Add('FROM subroutine');
     lQuery.SQL.Add('WHERE Context_Id = :ContextId');
-    lQuery.ParamByName('ContextId').AsString := ContextId;
+    lQuery.ParamByName('ContextId').AsString := Filter.ContextId;
     lQuery.Open();
 
     if lQuery.RecordCount = 0 then
@@ -133,7 +135,7 @@ begin
 end;
 
 procedure TPostgreSQLDataStore.GetGlobalStatistics(
-  var Stat: TGlobalStatistics);
+  var Stat: TGlobalStatistics; const Filter: TDataStoreFilter);
 var
   lQuery: TFDQuery;
 begin
@@ -141,10 +143,12 @@ begin
   lQuery.Connection := FConnection;
   try
     lQuery.SQL.Add('SELECT');
-    lQuery.SQL.Add('  COUNT(DISTINCT context_id) AS UniqueContextsCount,');
-    lQuery.SQL.Add('  SUM(CASE WHEN Status_Code >= 400 THEN 1 ELSE 0 END) AS TotalErrors,');
-    lQuery.SQL.Add('  SUM(CASE WHEN Status_Code < 400 THEN 1 ELSE 0 END) AS TotalSuccess');
-    lQuery.SQL.Add('FROM request;');
+    lQuery.SQL.Add('  COUNT(DISTINCT R.context_id) AS UniqueContextsCount,');
+    lQuery.SQL.Add('  SUM(CASE WHEN R.Status_Code >= 400 THEN 1 ELSE 0 END) AS TotalErrors,');
+    lQuery.SQL.Add('  SUM(CASE WHEN R.Status_Code < 400 THEN 1 ELSE 0 END) AS TotalSuccess');
+    lQuery.SQL.Add('FROM request R');
+    lQuery.SQL.Add('WHERE (1=1)');
+    ApplyDateFilter(lQuery, Filter, 'R');
     lQuery.Open();
 
     if lQuery.RecordCount > 0 then
@@ -165,7 +169,7 @@ begin
 end;
 
 procedure TPostgreSQLDataStore.GetStatusCodeSummaryStat(
-  var Stat: TArray<TStatusCodeSummaryStat>);
+  var Stat: TArray<TStatusCodeSummaryStat>; const Filter: TDataStoreFilter);
 var
   I: Integer;
   lQuery: TFDQuery;
@@ -174,10 +178,12 @@ begin
   lQuery := TFDQuery.Create(nil);
   lQuery.Connection := FConnection;
   try
-    lQuery.SQL.Add('SELECT Status_Code, COUNT(1) AS RequestCount');
-    lQuery.SQL.Add('FROM request');
-    lQuery.SQL.Add('GROUP BY Status_Code');
-    lQuery.SQL.Add('ORDER BY Status_Code;');
+    lQuery.SQL.Add('SELECT R.Status_Code, COUNT(1) AS RequestCount');
+    lQuery.SQL.Add('FROM request R');
+    lQuery.SQL.Add('WHERE (1=1)');
+    ApplyDateFilter(lQuery, Filter, 'R');
+    lQuery.SQL.Add('GROUP BY R.Status_Code');
+    lQuery.SQL.Add('ORDER BY R.Status_Code;');
     lQuery.Open();
 
     while not lQuery.Eof do
@@ -194,7 +200,7 @@ begin
 end;
 
 procedure TPostgreSQLDataStore.GetMethodTypeSummaryStat(
-  var Stat: TArray<TMethodTypeSummaryStat>);
+  var Stat: TArray<TMethodTypeSummaryStat>; const Filter: TDataStoreFilter);
 var
   I: Integer;
   lQuery: TFDQuery;
@@ -213,6 +219,8 @@ begin
     lQuery.SQL.Add('	ROUND(CAST(percentile_cont(0.99) WITHIN GROUP (ORDER BY R.Duration_Millis) AS numeric)) AS P99DurationMillis,');
     lQuery.SQL.Add('	SUM(CASE WHEN R.Status_Code >= 400 THEN 1 ELSE 0 END) AS ErrorCount');
     lQuery.SQL.Add('FROM request R');
+    lQuery.SQL.Add('WHERE (1=1)');
+    ApplyDateFilter(lQuery, Filter, 'R');
     lQuery.SQL.Add('GROUP BY R.METHOD;');
     lQuery.Open();
 
@@ -240,8 +248,7 @@ end;
 
 function TPostgreSQLDataStore.GetResources(
   out Resources: TResourceList;
-  const Page: Integer = 1;
-  const Limit: Integer = 50): Boolean;
+  const Filter: TDataStoreFilter): Boolean;
 var
   I: Integer;
   lQuery: TFDQuery;
@@ -252,10 +259,12 @@ begin
   try
     lQuery.SQL.Add('SELECT R.*');
     lQuery.SQL.Add('FROM request R');
+    lQuery.SQL.Add('WHERE (1=1) AND (Duration_Millis > 0)');
+    ApplyDateFilter(lQuery, Filter, 'R');
     lQuery.SQL.Add('ORDER BY R.created_at DESC');
     lQuery.SQL.Add('LIMIT :Limit OFFSET :Offset');
-    lQuery.ParamByName('Limit').AsInteger := Limit;
-    lQuery.ParamByName('Offset').AsInteger := (Page - 1) * Limit;
+    lQuery.ParamByName('Limit').AsInteger := Filter.Limit;
+    lQuery.ParamByName('Offset').AsInteger := (Filter.Page - 1) * Filter.Limit;
     lQuery.Open();
 
     if lQuery.RecordCount = 0 then
@@ -286,7 +295,7 @@ begin
 end;
 
 procedure TPostgreSQLDataStore.GetResourceSummaryStat(
-  var Stat: TArray<TResourceSummaryStat>);
+  var Stat: TArray<TResourceSummaryStat>; const Filter: TDataStoreFilter);
 var
   I: Integer;
   lQuery: TFDQuery;
@@ -320,6 +329,8 @@ begin
     lQuery.SQL.Add('		CAST(percentile_cont(0.99) WITHIN GROUP (ORDER BY R.Duration_Millis) AS numeric) AS p99_duration_millis,');
     lQuery.SQL.Add('		SUM(CASE WHEN R.Status_Code >= 400 THEN 1 ELSE 0 END) AS error_count');
     lQuery.SQL.Add('	FROM request R');
+    lQuery.SQL.Add('	WHERE (1=1) AND (R.Duration_Millis > 0)');
+    ApplyDateFilter(lQuery, Filter, 'R');
     lQuery.SQL.Add('	GROUP BY R.METHOD, R.Resource) R');
     lQuery.SQL.Add('');
     lQuery.SQL.Add('LEFT JOIN LATERAL (');
@@ -330,6 +341,7 @@ begin
     lQuery.SQL.Add('	FROM request R_0');
     lQuery.SQL.Add('	WHERE (R_0.Resource = R.Resource) AND ');
     lQuery.SQL.Add('			(R_0.Method = R.Method)');
+    ApplyDateFilter(lQuery, Filter, 'R_0');
     lQuery.SQL.Add('	ORDER BY R_0.Duration_Millis DESC');
     lQuery.SQL.Add('	LIMIT 1) L_J_HEA ON (1=1)');
     lQuery.SQL.Add('');
@@ -341,8 +353,11 @@ begin
     lQuery.SQL.Add('	FROM request R_0');
     lQuery.SQL.Add('	WHERE (R_0.Resource = R.Resource) AND ');
     lQuery.SQL.Add('			(R_0.Method = R.Method)');
+    ApplyDateFilter(lQuery, Filter, 'R_0');
     lQuery.SQL.Add('	ORDER BY R_0.Duration_Millis ASC');
     lQuery.SQL.Add('	LIMIT 1) L_J_LIG ON (1=1)');
+    lQuery.SQL.Add('ORDER BY R.Method, R.request_count');
+    lQuery.SQL.Add('LIMIT 10');
     lQuery.Open();
 
     if lQuery.RecordCount = 0 then
@@ -376,7 +391,7 @@ begin
 end;
 
 procedure TPostgreSQLDataStore.GetTopExpensiveRequests(
-  var Stat: TArray<TResource>);
+  var Stat: TArray<TResource>; const Filter: TDataStoreFilter);
 var
   I: Integer;
   lQuery: TFDQuery;
@@ -385,10 +400,12 @@ begin
   lQuery := TFDQuery.Create(nil);
   lQuery.Connection := FConnection;
   try
-    lQuery.SQL.Add('SELECT *');
-    lQuery.SQL.Add('FROM request');
-    lQuery.SQL.Add('ORDER BY Duration_Millis DESC');
-    lQuery.SQL.Add('LIMIT 5');
+    lQuery.SQL.Add('SELECT DISTINCT ON (R.Resource) R.*');
+    lQuery.SQL.Add('FROM request R');
+    lQuery.SQL.Add('WHERE (1=1) AND (Duration_Millis > 500)');
+    ApplyDateFilter(lQuery, Filter, 'R');
+    lQuery.SQL.Add('ORDER BY R.Resource, R.Duration_Millis DESC');
+    lQuery.SQL.Add('LIMIT 10');
     lQuery.Open();
 
     while not lQuery.Eof do
@@ -411,7 +428,7 @@ begin
 end;
 
 procedure TPostgreSQLDataStore.GetRequestsPerMinute(
-  var Stat: TArray<TRequestsPerMinuteStat>);
+  var Stat: TArray<TRequestsPerMinuteStat>; const Filter: TDataStoreFilter);
 var
   I: Integer;
   lQuery: TFDQuery;
@@ -421,12 +438,16 @@ begin
   lQuery.Connection := FConnection;
   try
     lQuery.SQL.Add('SELECT');
-    lQuery.SQL.Add('  to_char(date_trunc(''minute'', Created_At), ''YYYY-MM-DD"T"HH24:MI:SS'') AS minute_bucket,');
+    lQuery.SQL.Add('  to_char(date_trunc(''minute'', R.Created_At), ''YYYY-MM-DD"T"HH24:MI:SS'') AS minute_bucket,');
     lQuery.SQL.Add('  COUNT(*) AS request_count');
-    lQuery.SQL.Add('FROM request');
-    lQuery.SQL.Add('WHERE Created_At >= NOW() - INTERVAL ''60 minutes''');
-    lQuery.SQL.Add('GROUP BY date_trunc(''minute'', Created_At)');
-    lQuery.SQL.Add('ORDER BY date_trunc(''minute'', Created_At) ASC');
+    lQuery.SQL.Add('FROM request R');
+    lQuery.SQL.Add('WHERE (1=1) AND (Duration_Millis > 0)');
+    ApplyDateFilter(lQuery, Filter, 'R');
+    // If no filter is provided, we keep the original behavior of last 60 minutes
+    if (Filter.StartDate = 0) and (Filter.EndDate = 0) then
+      lQuery.SQL.Add('  AND R.Created_At >= NOW() - INTERVAL ''60 minutes''');
+    lQuery.SQL.Add('GROUP BY date_trunc(''minute'', R.Created_At)');
+    lQuery.SQL.Add('ORDER BY date_trunc(''minute'', R.Created_At) ASC');
     lQuery.Open();
 
     while not lQuery.Eof do
@@ -443,15 +464,38 @@ begin
 end;
 
 function TPostgreSQLDataStore.GetStatistics(
-  out Statistics: TStatistics): Boolean;
+  out Statistics: TStatistics; const Filter: TDataStoreFilter): Boolean;
 begin
-  GetGlobalStatistics(Statistics.GlobalStatistics);
-  GetStatusCodeSummaryStat(Statistics.StatusCodeSummaryStatistics);
-  GetMethodTypeSummaryStat(Statistics.MethodTypeSummaryStatistics);
-  GetResourceSummaryStat(Statistics.ResourceSummaryStatistics);
-  GetTopExpensiveRequests(Statistics.TopExpensiveRequests);
-  GetRequestsPerMinute(Statistics.RequestsPerMinute);
+  GetGlobalStatistics(Statistics.GlobalStatistics, Filter);
+  GetStatusCodeSummaryStat(Statistics.StatusCodeSummaryStatistics, Filter);
+  GetMethodTypeSummaryStat(Statistics.MethodTypeSummaryStatistics, Filter);
+  GetResourceSummaryStat(Statistics.ResourceSummaryStatistics, Filter);
+  GetTopExpensiveRequests(Statistics.TopExpensiveRequests, Filter);
+  GetRequestsPerMinute(Statistics.RequestsPerMinute, Filter);
   Result := True;
+end;
+
+procedure TPostgreSQLDataStore.ApplyDateFilter(const lQuery: TFDQuery;
+  const Filter: TDataStoreFilter; const TableAlias: String);
+var
+  lPrefix: String;
+begin
+  if TableAlias <> '' then
+    lPrefix := TableAlias + '.'
+  else
+    lPrefix := '';
+
+  if Filter.StartDate <> 0 then
+  begin
+    lQuery.SQL.Add('  AND ' + lPrefix + 'Created_At >= :StartDate');
+    lQuery.ParamByName('StartDate').AsDateTime := Filter.StartDate;
+  end;
+
+  if Filter.EndDate <> 0 then
+  begin
+    lQuery.SQL.Add('  AND ' + lPrefix + 'Created_At <= :EndDate');
+    lQuery.ParamByName('EndDate').AsDateTime := Filter.EndDate;
+  end;
 end;
 
 

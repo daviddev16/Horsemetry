@@ -12,6 +12,7 @@ type
     strict private
       class var Queue: TThreadedQueue<String>;
     public
+      class procedure Shutdown();
       class procedure Push(const JSONCommand: String);
       class function Pop(var JSONCommand: String): Boolean;
     protected
@@ -40,11 +41,17 @@ begin
   Queue.PushItem(JSONCommand);
 end;
 
+class procedure TCommandQueue.Shutdown();
+begin
+  if not Queue.ShutDown then
+    Queue.DoShutDown();
+end;
+
 class destructor TCommandQueue.Unitialize();
 begin
   if not Assigned(Queue) then
     Exit;
-  Queue.DoShutDown();
+  Shutdown();
   FreeAndNil(Queue);
 end;
 

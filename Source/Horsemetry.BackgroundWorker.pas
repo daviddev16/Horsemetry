@@ -35,11 +35,8 @@ begin
     lDataStore.CleanUp();
     lCommandExecutor := TCommandExecutor.Create(lDataStore);
     try
-      while not Terminated do
-      begin
-        while TCommandQueue.Pop(lJSONCommand) do
-          lCommandExecutor.Execute(lJSONCommand);
-      end;
+      while (not Terminated) and (TCommandQueue.Pop(lJSONCommand)) do
+        lCommandExecutor.Execute(lJSONCommand);
     finally
       lCommandExecutor.Free();
     end;

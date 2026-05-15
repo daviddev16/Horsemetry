@@ -9,42 +9,90 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Chart.js for visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Flatpickr for better date picking -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
     <style>
         :root {
-            --bg-color: #f3f4f6;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
+            --bg-color: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
             --card-bg: #ffffff;
-            --border-color: #e5e7eb;
-            --primary: #3b82f6;
-            --surface-subtle: #f9fafb;
+            --border-color: rgba(99, 102, 241, 0.1);
+            --primary: #6366f1;
+            --surface-subtle: #f1f5f9;
+            --hero-bg: #ffffff;
+            --hero-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --hero-border: rgba(0, 0, 0, 0.05);
+            --hero-text: #1e293b;
+            --hero-subtitle: rgba(71, 85, 105, 0.8);
+            --hero-clock: #1e293b;
+            --hero-status-bg: rgba(99, 102, 241, 0.07);
+            --hero-btn-bg: rgba(99, 102, 241, 0.05);
 
             /* Method Colors */
-            --get-color: #3b82f6;
+            --get-color: #2563eb;
             --get-bg: #eff6ff;
-            --post-color: #10b981;
-            --post-bg: #d1fae5;
-            --put-color: #f59e0b;
-            --put-bg: #fef3c7;
-            --delete-color: #ef4444;
-            --delete-bg: #fee2e2;
-            --patch-color: #8b5cf6;
-            --patch-bg: #ede9fe;
+            --post-color: #059669;
+            --post-bg: #ecfdf5;
+            --put-color: #d97706;
+            --put-bg: #fffbeb;
+            --delete-color: #dc2626;
+            --delete-bg: #fef2f2;
+            --patch-color: #7c3aed;
+            --patch-bg: #f5f3ff;
+
+            /* Ranks */
+            --rank-very-good: #059669;
+            --rank-bg-very-good: rgba(16, 185, 129, 0.1);
+            --rank-good: #2563eb;
+            --rank-bg-good: rgba(59, 130, 246, 0.1);
+            --rank-ok: #475569;
+            --rank-bg-ok: rgba(107, 114, 128, 0.1);
+            --rank-needs-improvement: #d97706;
+            --rank-bg-needs-improvement: rgba(245, 158, 11, 0.1);
+            --rank-bad: #ea580c;
+            --rank-bg-bad: rgba(234, 88, 12, 0.1);
+            --rank-nightmare: #dc2626;
+            --rank-bg-nightmare: rgba(239, 68, 68, 0.1);
         }
 
         [data-theme="dark"] {
-            --bg-color: #111827;
-            --text-main: #f9fafb;
-            --text-muted: #9ca3af;
-            --card-bg: #1f2937;
-            --border-color: #374151;
-            --surface-subtle: #283347;
+            --bg-color: #0f172a;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --card-bg: #1e293b;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --primary: #818cf8;
+            --surface-subtle: #1e293b;
+            --hero-bg: #1e293b;
+            --hero-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            --hero-border: rgba(255, 255, 255, 0.05);
+            --hero-text: #f1f5f9;
+            --hero-subtitle: rgba(148, 163, 184, 0.8);
+            --hero-clock: rgba(226, 232, 240, 0.95);
+            --hero-status-bg: rgba(255, 255, 255, 0.07);
+            --hero-btn-bg: rgba(255, 255, 255, 0.07);
 
             --get-bg: rgba(59, 130, 246, 0.2);
             --post-bg: rgba(16, 185, 129, 0.2);
             --put-bg: rgba(245, 158, 11, 0.2);
             --delete-bg: rgba(239, 68, 68, 0.2);
             --patch-bg: rgba(139, 92, 246, 0.2);
+
+            --rank-very-good: #34d399;
+            --rank-bg-very-good: rgba(16, 185, 129, 0.2);
+            --rank-good: #60a5fa;
+            --rank-bg-good: rgba(59, 130, 246, 0.2);
+            --rank-ok: #94a3b8;
+            --rank-bg-ok: rgba(107, 114, 128, 0.2);
+            --rank-needs-improvement: #fbbf24;
+            --rank-bg-needs-improvement: rgba(245, 158, 11, 0.2);
+            --rank-bad: #fb923c;
+            --rank-bg-bad: rgba(234, 88, 12, 0.2);
+            --rank-nightmare: #f87171;
+            --rank-bg-nightmare: rgba(239, 68, 68, 0.2);
         }
 
         * {
@@ -78,6 +126,34 @@
             font-size: 1.5rem;
             font-weight: 600;
             color: var(--text-main);
+        }
+
+        th.sort-desc::after {
+            content: ' ↓';
+            color: var(--text-main);
+        }
+
+        .btn-info {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .btn-info:hover {
+            color: var(--text-main);
+            border-color: var(--text-muted);
+            background: var(--surface-subtle);
         }
 
         .status {
@@ -249,7 +325,6 @@
         /* Expandable Rows */
         .expandable-row {
             cursor: pointer;
-            transition: background-color 0.2s;
         }
 
         .expandable-row:hover td {
@@ -365,159 +440,195 @@
         .sub-bar-fill {
             height: 100%;
             border-radius: 3px;
-            transition: width 0.3s ease;
         }
 
-        /* Utility Classes */
-        .text-right {
-            text-align: right;
-        }
-
-        .text-muted {
-            color: var(--text-muted);
-        }
-
-        .font-mono {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        }
-
-        /* Badges */
-        .badge {
-            display: inline-flex;
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            padding: 0.25rem 0.625rem;
-            border-radius: 9999px;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .flex-baseline {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .h-250 {
+            height: 250px;
+        }
+
+        .m-0 {
+            margin: 0;
+        }
+
+        .mb-0 {
+            margin-bottom: 0;
+        }
+
+        .mt-1-5 {
+            margin-top: 1.5rem;
+        }
+
+        .mb-1 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-1-5 {
+            margin-bottom: 1.5rem;
+        }
+
+        .fs-0-75 {
             font-size: 0.75rem;
-            font-weight: 500;
         }
 
-        .badge-GET {
-            background-color: var(--get-bg);
-            color: var(--get-color);
+        .gap-0-5 {
+            gap: 0.5rem;
         }
 
-        .badge-POST {
-            background-color: var(--post-bg);
-            color: var(--post-color);
-        }
-
-        .badge-PUT {
-            background-color: var(--put-bg);
-            color: var(--put-color);
-        }
-
-        .badge-DELETE {
-            background-color: var(--delete-bg);
-            color: var(--delete-color);
-        }
-
-        .badge-PATCH {
-            background-color: var(--patch-bg);
-            color: var(--patch-color);
-        }
-
+        /* Rank Badges & Colors */
         /* Rank Badges & Colors */
         .rank-badge {
             display: inline-block;
             margin-left: 0.5rem;
-            padding: 0.1rem 0.5rem;
+            padding: 0.15rem 0.6rem;
             border-radius: 4px;
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.025em;
             vertical-align: middle;
             cursor: pointer;
-            transition: opacity 0.2s ease;
+            transition: all 0.2s;
+            white-space: nowrap;
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .rank-badge:hover {
             opacity: 0.8;
-            box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--border-color);
         }
 
-        .rank-very-good {
-            color: #10b981;
-        }
 
         .rank-bg-very-good {
-            background-color: #d1fae5;
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .rank-good {
-            color: #3b82f6;
+            background-color: var(--rank-bg-very-good);
+            color: var(--rank-very-good);
         }
 
         .rank-bg-good {
-            background-color: #eff6ff;
-            color: #3b82f6;
-            border: 1px solid rgba(59, 130, 246, 0.2);
-        }
-
-        .rank-ok {
-            color: #6b7280;
+            background-color: var(--rank-bg-good);
+            color: var(--rank-good);
         }
 
         .rank-bg-ok {
-            background-color: #f3f4f6;
-            color: #6b7280;
-            border: 1px solid rgba(107, 114, 128, 0.2);
-        }
-
-        .rank-needs-improvement {
-            color: #f59e0b;
+            background-color: var(--rank-bg-ok);
+            color: var(--rank-ok);
         }
 
         .rank-bg-needs-improvement {
-            background-color: #fef3c7;
-            color: #f59e0b;
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-
-        .rank-bad {
-            color: #ea580c;
+            background-color: var(--rank-bg-needs-improvement);
+            color: var(--rank-needs-improvement);
         }
 
         .rank-bg-bad {
-            background-color: #ffedd5;
-            color: #ea580c;
-            border: 1px solid rgba(234, 88, 12, 0.2);
-        }
-
-        .rank-nightmare {
-            color: #ef4444;
+            background-color: var(--rank-bg-bad);
+            color: var(--rank-bad);
         }
 
         .rank-bg-nightmare {
-            background-color: #fee2e2;
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            background-color: var(--rank-bg-nightmare);
+            color: var(--rank-nightmare);
         }
 
-        [data-theme="dark"] .rank-bg-very-good {
-            background-color: rgba(16, 185, 129, 0.2);
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
         }
 
-        [data-theme="dark"] .rank-bg-good {
-            background-color: rgba(59, 130, 246, 0.2);
+        .modal-content {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 480px;
+            width: 90%;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
 
-        [data-theme="dark"] .rank-bg-ok {
-            background-color: rgba(107, 114, 128, 0.2);
+
+        .modal-title {
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            font-size: 1.25rem;
+            font-weight: 700;
         }
 
-        [data-theme="dark"] .rank-bg-needs-improvement {
-            background-color: rgba(245, 158, 11, 0.2);
+        .modal-text {
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
         }
 
-        [data-theme="dark"] .rank-bg-bad {
-            background-color: rgba(234, 88, 12, 0.2);
+        .modal-rank-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
         }
 
-        [data-theme="dark"] .rank-bg-nightmare {
-            background-color: rgba(239, 68, 68, 0.2);
+        .modal-rank-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+
+        .modal-rank-badge {
+            width: 100px;
+            text-align: center;
+            margin-left: 0;
+            flex-shrink: 0;
+            cursor: default !important;
+        }
+
+        .modal-footer {
+            text-align: right;
+            margin-top: 2rem;
+        }
+
+        .modal-btn-close {
+            padding: 0.6rem 1.8rem;
+            border: none;
+            background: var(--primary);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .modal-btn-close:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
 
         /* Sortable Headers */
@@ -614,26 +725,142 @@
             border-radius: 12px;
             margin-bottom: 2rem;
             overflow: hidden;
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0f2942 70%, #0d1b2e 100%);
-            padding: 1.75rem 2rem;
+            background: var(--hero-bg);
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1.5rem;
+            box-shadow: var(--hero-shadow);
+            border: 1px solid var(--hero-border);
+        }
+
+        .hero-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-filters-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 1.5rem;
             flex-wrap: wrap;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            gap: 1rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 10;
         }
 
-        .hero-header::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.18) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
-                radial-gradient(ellipse at 60% 80%, rgba(16, 185, 129, 0.10) 0%, transparent 50%);
-            pointer-events: none;
+        .filter-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
         }
+
+        .filter-input::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(1);
+            opacity: 0.6;
+        }
+
+        .filter-input::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
+        .filter-input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .quick-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .btn-quick-filter {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-quick-filter:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.4);
+            color: #fff;
+        }
+
+        .btn-quick-filter.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        /* Filter Row Layout Classes */
+        .filters-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .filters-inputs-row {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            margin-bottom: 0;
+        }
+
+        .filter-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(148, 163, 184, 0.8);
+            margin-bottom: 0.3rem;
+            display: block;
+        }
+
+        .btn-clear-period {
+            margin-top: 1.1rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .refresh-badge {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+        }
+
+        .refresh-badge strong {
+            color: var(--primary);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
 
         .hero-header::after {
             content: '';
@@ -642,7 +869,7 @@
             left: 0;
             right: 0;
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(99, 179, 237, 0.5), rgba(139, 92, 246, 0.4), transparent);
+            background: var(--hero-border);
         }
 
         .hero-left {
@@ -656,27 +883,15 @@
             width: 52px;
             height: 52px;
             border-radius: 12px;
-            background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+            background: var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.75rem;
             box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 20px rgba(99, 102, 241, 0.4);
-            animation: logoPulse 3s ease-in-out infinite;
             flex-shrink: 0;
         }
 
-        @keyframes logoPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 20px rgba(99, 102, 241, 0.35);
-            }
-
-            50% {
-                box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 32px rgba(99, 102, 241, 0.6);
-            }
-        }
 
         .hero-titles {
             display: flex;
@@ -688,23 +903,13 @@
             font-size: 1.5rem;
             font-weight: 700;
             letter-spacing: -0.02em;
-            background: linear-gradient(90deg, #93c5fd, #c4b5fd, #6ee7b7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--hero-text);
             line-height: 1.2;
-        }
-
-        .hero-wordmark span {
-            background: linear-gradient(90deg, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
         .hero-subtitle {
             font-size: 0.75rem;
-            color: rgba(148, 163, 184, 0.8);
+            color: var(--hero-subtitle);
             font-weight: 400;
             letter-spacing: 0.06em;
             text-transform: uppercase;
@@ -728,21 +933,21 @@
         .hero-clock-time {
             font-size: 1.1rem;
             font-weight: 600;
-            color: rgba(226, 232, 240, 0.95);
+            color: var(--hero-clock);
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.02em;
         }
 
         .hero-clock-date {
             font-size: 0.7rem;
-            color: rgba(148, 163, 184, 0.7);
+            color: var(--text-muted);
             letter-spacing: 0.04em;
         }
 
         .hero-divider {
             width: 1px;
             height: 36px;
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--border-color);
         }
 
         .hero-status {
@@ -750,13 +955,12 @@
             font-weight: 500;
             padding: 0.4rem 0.9rem;
             border-radius: 9999px;
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: rgba(148, 163, 184, 0.9);
+            background: var(--hero-status-bg);
+            border: 1px solid var(--hero-border);
+            color: var(--text-muted);
             display: flex;
             align-items: center;
             gap: 0.4rem;
-            transition: all 0.3s;
         }
 
         .hero-status.connected {
@@ -771,7 +975,6 @@
             height: 6px;
             border-radius: 50%;
             background: #10b981;
-            animation: statusBlink 2s ease-in-out infinite;
         }
 
         .hero-status.offline {
@@ -788,98 +991,244 @@
             background: #f59e0b;
         }
 
-        @keyframes statusBlink {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.4;
-            }
-        }
 
         .btn-theme-hero {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: rgba(226, 232, 240, 0.85);
+            background: var(--hero-btn-bg);
+            border: 1px solid var(--hero-border);
+            color: var(--text-main);
             padding: 0.4rem 0.85rem;
             border-radius: 8px;
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 500;
-            transition: all 0.2s;
             white-space: nowrap;
         }
 
         .btn-theme-hero:hover {
-            background: rgba(255, 255, 255, 0.13);
-            color: #fff;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
         }
 
         /* ── Hero Header — Light Theme Overrides ── */
         :root:not([data-theme="dark"]) .hero-header {
-            background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 40%, #f0fdf4 100%);
-            box-shadow: 0 2px 16px rgba(59, 130, 246, 0.1), 0 1px 3px rgba(0,0,0,0.06);
-            border: 1px solid rgba(99, 102, 241, 0.15);
+            background: var(--hero-bg);
+            box-shadow: var(--hero-shadow);
+            border: 1px solid var(--hero-border);
         }
+
         :root:not([data-theme="dark"]) .hero-header::before {
             background:
                 radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 60%),
                 radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 55%),
                 radial-gradient(ellipse at 60% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
         }
+
         :root:not([data-theme="dark"]) .hero-header::after {
             background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.25), transparent);
         }
+
         :root:not([data-theme="dark"]) .hero-wordmark {
             background: linear-gradient(90deg, #1d4ed8, #6d28d9, #065f46);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         :root:not([data-theme="dark"]) .hero-wordmark span {
             background: linear-gradient(90deg, #4338ca, #7c3aed);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         :root:not([data-theme="dark"]) .hero-subtitle {
             color: rgba(71, 85, 105, 0.8);
         }
+
         :root:not([data-theme="dark"]) .hero-clock-time {
             color: #1e293b;
         }
+
         :root:not([data-theme="dark"]) .hero-clock-date {
             color: rgba(71, 85, 105, 0.7);
         }
+
         :root:not([data-theme="dark"]) .hero-divider {
             background: rgba(99, 102, 241, 0.2);
         }
+
         :root:not([data-theme="dark"]) .hero-status {
             background: rgba(99, 102, 241, 0.07);
             border-color: rgba(99, 102, 241, 0.2);
             color: #475569;
         }
+
         :root:not([data-theme="dark"]) .hero-status.connected {
             background: rgba(16, 185, 129, 0.1);
             border-color: rgba(16, 185, 129, 0.3);
             color: #059669;
         }
+
         :root:not([data-theme="dark"]) .hero-status.offline {
             background: rgba(245, 158, 11, 0.1);
             border-color: rgba(245, 158, 11, 0.3);
             color: #b45309;
         }
+
         :root:not([data-theme="dark"]) .btn-theme-hero {
             background: rgba(99, 102, 241, 0.08);
             border-color: rgba(99, 102, 241, 0.2);
             color: #3730a3;
         }
+
         :root:not([data-theme="dark"]) .btn-theme-hero:hover {
             background: rgba(99, 102, 241, 0.15);
             color: #1e1b4b;
+        }
+
+        :root:not([data-theme="dark"]) .hero-filters-row {
+            border-top-color: rgba(99, 102, 241, 0.1);
+        }
+
+        :root:not([data-theme="dark"]) .filter-input {
+            background: rgba(255, 255, 255, 0.6);
+            border-color: rgba(99, 102, 241, 0.2);
+            color: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .filter-input:focus {
+            background: #fff;
+            border-color: var(--primary);
+        }
+
+        :root:not([data-theme="dark"]) .filter-input::-webkit-calendar-picker-indicator {
+            filter: invert(0);
+            opacity: 0.5;
+        }
+
+        :root:not([data-theme="dark"]) .btn-quick-filter {
+            background: rgba(99, 102, 241, 0.05);
+            border-color: rgba(99, 102, 241, 0.1);
+            color: #475569;
+        }
+
+        :root:not([data-theme="dark"]) .btn-quick-filter:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: #1e1b4b;
+        }
+
+        :root:not([data-theme="dark"]) .btn-quick-filter.active {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        :root:not([data-theme="dark"]) .filter-label {
+            color: #64748b;
+        }
+
+        :root:not([data-theme="dark"]) .btn-clear-period {
+            background: rgba(239, 68, 68, 0.05);
+            border-color: rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+        }
+
+        :root:not([data-theme="dark"]) .btn-clear-period:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #b91c1c;
+        }
+
+        :root:not([data-theme="dark"]) .refresh-badge {
+            background: rgba(99, 102, 241, 0.05);
+            color: #64748b;
+        }
+
+        /* Flatpickr Dark Mode Overrides */
+        [data-theme="dark"] .flatpickr-calendar {
+            background: #1e293b;
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+        [data-theme="dark"] .flatpickr-calendar.arrowTop:before,
+        [data-theme="dark"] .flatpickr-calendar.arrowTop:after {
+            border-bottom-color: #1e293b;
+        }
+        [data-theme="dark"] .flatpickr-calendar.arrowBottom:before,
+        [data-theme="dark"] .flatpickr-calendar.arrowBottom:after {
+            border-top-color: #1e293b;
+        }
+        [data-theme="dark"] .flatpickr-day {
+            color: #f8fafc;
+        }
+        [data-theme="dark"] .flatpickr-day.selected,
+        [data-theme="dark"] .flatpickr-day.startRange,
+        [data-theme="dark"] .flatpickr-day.endRange,
+        [data-theme="dark"] .flatpickr-day.selected.inRange,
+        [data-theme="dark"] .flatpickr-day.startRange.inRange,
+        [data-theme="dark"] .flatpickr-day.endRange.inRange,
+        [data-theme="dark"] .flatpickr-day.selected:focus,
+        [data-theme="dark"] .flatpickr-day.startRange:focus,
+        [data-theme="dark"] .flatpickr-day.endRange:focus,
+        [data-theme="dark"] .flatpickr-day.selected:hover,
+        [data-theme="dark"] .flatpickr-day.startRange:hover,
+        [data-theme="dark"] .flatpickr-day.endRange:hover,
+        [data-theme="dark"] .flatpickr-day.selected.prevMonthDay,
+        [data-theme="dark"] .flatpickr-day.startRange.prevMonthDay,
+        [data-theme="dark"] .flatpickr-day.endRange.prevMonthDay,
+        [data-theme="dark"] .flatpickr-day.selected.nextMonthDay,
+        [data-theme="dark"] .flatpickr-day.startRange.nextMonthDay,
+        [data-theme="dark"] .flatpickr-day.endRange.nextMonthDay {
+            background: #6366f1;
+            border-color: #6366f1;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .flatpickr-day:hover,
+        [data-theme="dark"] .flatpickr-day.prevMonthDay:hover,
+        [data-theme="dark"] .flatpickr-day.nextMonthDay:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: transparent;
+        }
+        [data-theme="dark"] .flatpickr-day.inRange {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: transparent;
+            box-shadow: none;
+        }
+        [data-theme="dark"] .flatpickr-month {
+            color: #f8fafc;
+            fill: #f8fafc;
+        }
+        [data-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months {
+            background: transparent;
+            color: #f8fafc;
+        }
+        [data-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month {
+            background: #1e293b;
+        }
+        [data-theme="dark"] .flatpickr-current-month input.cur-year {
+            color: #f8fafc;
+            background: transparent;
+        }
+        [data-theme="dark"] .flatpickr-current-month .numInputWrapper span.arrowUp:after {
+            border-bottom-color: #f8fafc;
+        }
+        [data-theme="dark"] .flatpickr-current-month .numInputWrapper span.arrowDown:after {
+            border-top-color: #f8fafc;
+        }
+        [data-theme="dark"] .flatpickr-weekday {
+            color: #64748b;
+        }
+        [data-theme="dark"] .flatpickr-time {
+            border-top-color: rgba(255, 255, 255, 0.1);
+        }
+        [data-theme="dark"] .flatpickr-time input {
+            color: #f8fafc;
+        }
+        [data-theme="dark"] .flatpickr-time .flatpickr-time-separator {
+            color: #f8fafc;
+        }
+        [data-theme="dark"] .flatpickr-day.flatpickr-disabled,
+        [data-theme="dark"] .flatpickr-day.prevMonthDay, 
+        [data-theme="dark"] .flatpickr-day.nextMonthDay {
+            color: #475569;
         }
     </style>
     <script>
@@ -894,30 +1243,64 @@
     <div class="container">
         <!-- Hero Header -->
         <header class="hero-header">
-            <div class="hero-left">
-                <div class="hero-logo">🐦‍🔥</div>
-                <div class="hero-titles">
-                    <div class="hero-wordmark">Horse<span>metry</span></div>
-                    <div class="hero-subtitle">API Observability &amp; Telemetry Dashboard</div>
+            <div class="hero-top">
+                <div class="hero-left">
+                    <div class="hero-logo">🐦‍🔥</div>
+                    <div class="hero-titles">
+                        <!-- DO NOT REMOVE THE PLACEHOLDER STRING -->
+                        <div class="hero-wordmark">${[{PLACEHOLDER_HEADER}]}</div>
+                        <div class="hero-subtitle">${[{PLACEHOLDER_DESCRIPTION}]}</div>
+                        <!-- DO NOT REMOVE THE PLACEHOLDER STRING -->
+                    </div>
+                </div>
+                <div class="hero-right">
+                    <div class="hero-clock">
+                        <div class="hero-clock-time" id="hero-clock-time">--:--:--</div>
+                        <div class="hero-clock-date" id="hero-clock-date">---</div>
+                    </div>
+                    <div class="hero-divider"></div>
+                    <button id="theme-toggle" class="btn-theme-hero" onclick="toggleTheme()">🌙 Dark</button>
+                    <div id="status-indicator" class="hero-status">Conectando...</div>
                 </div>
             </div>
-            <div class="hero-right">
-                <div class="hero-clock">
-                    <div class="hero-clock-time" id="hero-clock-time">--:--:--</div>
-                    <div class="hero-clock-date" id="hero-clock-date">---</div>
+
+            <!-- Global Filters Row -->
+            <div class="hero-filters-row">
+                <div class="filters-container">
+                    <div class="filters-inputs-row">
+                        <div class="filter-group">
+                            <label class="filter-label">Periodo (De)</label>
+                            <input type="datetime-local" id="global-date-from" onchange="onGlobalFilterChange()"
+                                class="filter-input">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Periodo (At&eacute;)</label>
+                            <input type="datetime-local" id="global-date-to" onchange="onGlobalFilterChange()"
+                                class="filter-input">
+                        </div>
+                        <button class="btn-theme-hero btn-clear-period" onclick="clearGlobalFilters()">Limpar
+                            Periodo</button>
+                    </div>
+
+                    <div class="quick-filters">
+                        <button class="btn-quick-filter" onclick="setQuickFilter('3h')">Ultimas 3h</button>
+                        <button class="btn-quick-filter" onclick="setQuickFilter('6h')">Ultimas 6h</button>
+                        <button class="btn-quick-filter" onclick="setQuickFilter('today')">Hoje</button>
+                        <button class="btn-quick-filter" onclick="setQuickFilter('yesterday')">Ultimo dia</button>
+                        <button class="btn-quick-filter" onclick="setQuickFilter('week')">Semana Atual</button>
+                        <button class="btn-quick-filter" onclick="setQuickFilter('month')">M&ecirc;s Atual</button>
+                    </div>
                 </div>
-                <div class="hero-divider"></div>
-                <button id="theme-toggle" class="btn-theme-hero" onclick="toggleTheme()">🌙 Dark</button>
-                <div id="status-indicator" class="hero-status">Conectando...</div>
+                <div id="refresh-status" class="refresh-badge">
+                    Pr&oacute;xima atualiza&ccedil;&atilde;o em <strong id="refresh-timer">5</strong>s
+                </div>
             </div>
         </header>
 
-        <!-- Summary Section -->
         <section class="section">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-                <h2 class="section-title" style="margin-bottom: 0;">Vis&atilde;o Geral</h2>
-                <div class="legend-container" style="display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.75rem;">
+            <div class="flex-between mb-1-5">
+                <h2 class="section-title mb-0">Vis&atilde;o Geral</h2>
+                <div class="legend-container flex gap-0-5 fs-0-75">
                     <span class="rank-badge rank-bg-very-good">Excelente &le; 100ms</span>
                     <span class="rank-badge rank-bg-good">Bom &le; 300ms</span>
                     <span class="rank-badge rank-bg-ok">Aceit&aacute;vel &le; 500ms</span>
@@ -950,46 +1333,59 @@
 
             <div class="charts-grid">
                 <div class="chart-card">
-                    <h3 class="metric-title">Requisi&ccedil;&otilde;es por M&eacute;todo</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <h3 class="metric-title" style="margin-bottom: 0;">Requisi&ccedil;&otilde;es por M&eacute;todo</h3>
+                        <button class="btn-info" onclick="openChartInfo('method')" title="Informações sobre o gráfico">?</button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="methodChart"></canvas>
                     </div>
                 </div>
                 <div class="chart-card">
-                    <h3 class="metric-title">Requisi&ccedil;&otilde;es por Status</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <h3 class="metric-title" style="margin-bottom: 0;">Requisi&ccedil;&otilde;es por Status</h3>
+                        <button class="btn-info" onclick="openChartInfo('status')" title="Informações sobre o gráfico">?</button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="statusChart"></canvas>
                     </div>
                 </div>
                 <div class="chart-card">
-                    <h3 class="metric-title">Tempo M&eacute;dio por Recurso (ms)</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <h3 class="metric-title" style="margin-bottom: 0;">Tempo M&eacute;dio por Recurso (ms)</h3>
+                        <button class="btn-info" onclick="openChartInfo('resource')" title="Informações sobre o gráfico">?</button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="resourceChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1.5rem; margin-top: 1.5rem;">
+            <div class="grid-2col">
                 <div class="chart-card">
-                    <h3 class="metric-title">Lat&ecirc;ncia ao Longo do Tempo</h3>
-                    <div class="chart-container" style="height: 250px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <h3 class="metric-title" style="margin-bottom: 0;">Lat&ecirc;ncia ao Longo do Tempo</h3>
+                        <button class="btn-info" onclick="openChartInfo('latency')" title="Informações sobre o gráfico">?</button>
+                    </div>
+                    <div class="chart-container h-250">
                         <canvas id="latencyTimeChart"></canvas>
                     </div>
                 </div>
                 <div class="chart-card">
-                    <h3 class="metric-title">Requisi&ccedil;&otilde;es por Minuto</h3>
-                    <div class="chart-container" style="height: 250px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <h3 class="metric-title" style="margin-bottom: 0;">Requisi&ccedil;&otilde;es por Minuto</h3>
+                        <button class="btn-info" onclick="openChartInfo('rpm')" title="Informações sobre o gráfico">?</button>
+                    </div>
+                    <div class="chart-container h-250">
                         <canvas id="rpmChart"></canvas>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Method Summary Grid -->
         <section class="section">
-            <div
-                style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
-                <h2 class="section-title" style="margin-bottom: 0;">Performance por M&eacute;todo</h2>
+            <div class="flex-baseline mb-1">
+                <h2 class="section-title mb-0">Performance por M&eacute;todo</h2>
                 <div
                     style="font-size: 0.8rem; color: var(--text-muted); background: var(--card-bg); padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid var(--border-color);">
                     <strong>P95 / P99:</strong> 95% ou 99% das requisi&ccedil;&otilde;es s&atilde;o mais r&aacute;pidas
@@ -1082,7 +1478,10 @@
                     </div>
                 </div>
                 <div class="chart-card" style="margin-bottom: 0; display: flex; flex-direction: column;">
-                    <h3 class="metric-title">Propor&ccedil;&atilde;o de Tempo (ms)</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <h3 class="metric-title" style="margin-bottom: 0;">Propor&ccedil;&atilde;o de Tempo (ms)</h3>
+                        <button class="btn-info" onclick="openChartInfo('expensive')" title="Informações sobre o gráfico">?</button>
+                    </div>
                     <div class="chart-container" style="flex: 1; min-height: 250px;">
                         <canvas id="expensiveChart"></canvas>
                     </div>
@@ -1115,14 +1514,6 @@
                             <option value="4xx">4xx (Erro Cliente)</option>
                             <option value="5xx">5xx (Erro Servidor)</option>
                         </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Data (de)</label>
-                        <input type="datetime-local" id="filter-date-from">
-                    </div>
-                    <div class="filter-group">
-                        <label>Data (at&eacute;)</label>
-                        <input type="datetime-local" id="filter-date-to">
                     </div>
                     <button onclick="applyFilters()"
                         style="align-self: flex-end; padding: 0.4rem 1rem; font-size: 0.8rem; border: none; background: var(--primary); color: #fff; border-radius: 4px; cursor: pointer; font-weight: 500;">Aplicar
@@ -1200,23 +1591,17 @@
         function clearFilters() {
             document.getElementById('filter-method').value = '';
             document.getElementById('filter-status').value = '';
-            document.getElementById('filter-date-from').value = '';
-            document.getElementById('filter-date-to').value = '';
             applyFilters();
         }
         function getFilteredRequests(data) {
             let filtered = [...data];
             const method = document.getElementById('filter-method').value;
             const status = document.getElementById('filter-status').value;
-            const dateFrom = document.getElementById('filter-date-from').value;
-            const dateTo = document.getElementById('filter-date-to').value;
             if (method) filtered = filtered.filter(r => r.MethodType === method);
             if (status) {
                 const base = parseInt(status.charAt(0)) * 100;
                 filtered = filtered.filter(r => r.StatusCode >= base && r.StatusCode < base + 100);
             }
-            if (dateFrom) { const d = new Date(dateFrom); filtered = filtered.filter(r => new Date(r.CreateAt) >= d); }
-            if (dateTo) { const d = new Date(dateTo); filtered = filtered.filter(r => new Date(r.CreateAt) <= d); }
             return filtered;
         }
 
@@ -1264,89 +1649,16 @@
 
         function initCharts() {
             const ctxMethod = document.getElementById('methodChart').getContext('2d');
-            methodChart = new Chart(ctxMethod, {
-                type: 'doughnut',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    cutout: '70%'
-                }
-            });
+            const cOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '70%' };
+            methodChart = new Chart(document.getElementById('methodChart'), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] }, options: cOpts });
+            statusChart = new Chart(document.getElementById('statusChart'), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] }, options: cOpts });
 
-            const ctxStatus = document.getElementById('statusChart').getContext('2d');
-            statusChart = new Chart(ctxStatus, {
-                type: 'doughnut',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    cutout: '70%'
-                }
-            });
 
-            const ctxResource = document.getElementById('resourceChart').getContext('2d');
-            resourceChart = new Chart(ctxResource, {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Avg Time (ms)', data: [], backgroundColor: '#3b82f6', borderRadius: 4 }] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: { border: { display: false }, grid: { color: 'rgba(107, 114, 128, 0.1)' }, beginAtZero: true }
-                    }
-                }
-            });
-
-            const ctxLatency = document.getElementById('latencyTimeChart').getContext('2d');
-            latencyTimeChart = new Chart(ctxLatency, {
-                type: 'line',
-                data: { labels: [], datasets: [{ label: 'Latency (ms)', data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 2 }] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { display: true },
-                        y: { border: { display: false }, grid: { color: 'rgba(107, 114, 128, 0.1)' }, beginAtZero: true }
-                    }
-                }
-            });
-
-            const ctxExpensive = document.getElementById('expensiveChart').getContext('2d');
-            expensiveChart = new Chart(ctxExpensive, {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Tempo (ms)', data: [], backgroundColor: '#ef4444', borderRadius: 4 }] },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { border: { display: false }, grid: { color: 'rgba(107, 114, 128, 0.1)' }, beginAtZero: true },
-                        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
-                    }
-                }
-            });
-
-            const ctxRpm = document.getElementById('rpmChart').getContext('2d');
-            rpmChart = new Chart(ctxRpm, {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Requisições', data: [], backgroundColor: '#6366f1', borderRadius: 4 }] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { display: true, grid: { display: false }, ticks: { font: { size: 10 } } },
-                        y: { border: { display: false }, grid: { color: 'rgba(107, 114, 128, 0.1)' }, beginAtZero: true }
-                    }
-                }
-            });
+            const bOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { border: { display: false }, grid: { color: 'rgba(107, 114, 128, 0.1)' }, beginAtZero: true } } };
+            resourceChart = new Chart(document.getElementById('resourceChart'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Avg Time (ms)', data: [], backgroundColor: '#3b82f6', borderRadius: 4 }] }, options: bOpts });
+            latencyTimeChart = new Chart(document.getElementById('latencyTimeChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Latency (ms)', data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 2 }] }, options: { ...bOpts, scales: { x: { display: true }, y: bOpts.scales.y } } });
+            expensiveChart = new Chart(document.getElementById('expensiveChart'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Tempo (ms)', data: [], backgroundColor: '#ef4444', borderRadius: 4 }] }, options: { ...bOpts, indexAxis: 'y', scales: { x: bOpts.scales.y, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } } });
+            rpmChart = new Chart(document.getElementById('rpmChart'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Requisições', data: [], backgroundColor: '#6366f1', borderRadius: 4 }] }, options: { ...bOpts, scales: { x: { display: true, grid: { display: false }, ticks: { font: { size: 10 } } }, y: bOpts.scales.y } } });
         }
 
         // Ranking scale for execution times
@@ -1359,11 +1671,10 @@
             return { label: 'Cr&iacute;tico', textClass: 'rank-nightmare', bgClass: 'rank-bg-nightmare' };
         }
 
-        function formatDate(isoString) {
-            if (!isoString) return '-';
-            const date = new Date(isoString);
-            return date.toLocaleTimeString() + ' · ' + date.toLocaleDateString();
-        }
+        const formatDate = (iso) => { if (!iso) return '-'; const d = new Date(iso); return d.toLocaleTimeString() + ' · ' + d.toLocaleDateString(); };
+        const badge = (m) => `<span class="badge badge-${m}">${m}</span>`;
+        const rankBadge = (ms) => { const r = getRank(ms); return `<span class="rank-badge ${r.bgClass}">${r.label}</span>`; };
+        const statusColor = (c) => c >= 400 ? 'var(--delete-color)' : 'var(--post-color)';
 
         function updateUI(summary, requests, isMock = false) {
             // Update Connection Status
@@ -1495,16 +1806,17 @@
                         const isExpOpen = openExpDetails.has(expRowId) ? 'open' : '';
                         expTbody.innerHTML += `
                             <tr class="expandable-row" onclick="toggleExpensiveDetails('${expRowId}', '${req.ContextId || ''}')">
-                                <td><span class="badge badge-${req.MethodType}">${req.MethodType}</span></td>
-                                <td><span style="color: ${req.StatusCode >= 400 ? 'var(--delete-color)' : 'var(--post-color)'}; font-weight: 600;">${req.StatusCode || 200}</span></td>
+                                <td>${badge(req.MethodType)}</td>
+                                <td><span style="color: ${statusColor(req.StatusCode)}; font-weight: 600;">${req.StatusCode || 200}</span></td>
                                 <td class="font-mono text-muted" title="${req.Resource}">${req.Resource.length > 30 ? req.Resource.substring(0, 27) + '...' : req.Resource}</td>
                                 <td class="text-muted" style="font-size: 0.8rem;">${formatDate(req.CreateAt)}</td>
                                 <td><span style="color:var(--primary)" title="${req.Queries || ''}">${req.Queries ? '?' + (req.Queries.length > 20 ? req.Queries.substring(0, 17) + '...' : req.Queries) : 'None'}</span></td>
-                                <td class="text-right font-mono ${getRank(req.DurationMillis).textClass}">${req.DurationMillis}ms <span class="rank-badge ${getRank(req.DurationMillis).bgClass}">${getRank(req.DurationMillis).label}</span></td>
+                                <td class="text-right font-mono ${getRank(req.DurationMillis).textClass}">${req.DurationMillis}ms ${rankBadge(req.DurationMillis)}</td>
                             </tr>
                             <tr id="${expRowId}" class="details-row ${isExpOpen}">
                                 <td colspan="6" style="padding: 0; border: none;">
                                     <div class="details-content">
+                                        <div style="margin-bottom: 0.5rem;"><strong>Resource:</strong> <span class="font-mono" style="word-break: break-all; color: var(--text-main);">${req.Resource || '-'}</span></div>
                                         <div style="margin-bottom: 0.5rem;"><strong>Context ID:</strong> ${req.ContextId || '-'}</div>
                                         <div style="margin-bottom: 0.5rem;"><strong>Queries:</strong> <span style="color:var(--primary)">${req.Queries ? '?' + req.Queries : 'None'}</span></div>
                                         ${req.ResponseBody ? `<div style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px;"><strong style="color: var(--delete-color);">&#9888; Resposta do Servidor (5XX):</strong><pre style="margin: 0.5rem 0 0 0; white-space: pre-wrap; word-break: break-all; font-size: 0.8rem; color: var(--text-main);">${req.ResponseBody}</pre></div>` : ''}
@@ -1551,15 +1863,16 @@
                     const isOpen = openDetails.has(rowId) ? 'open' : '';
                     newHtml += `
                         <tr class="expandable-row" onclick="toggleReqDetails('${rowId}', '${req.ContextId || ''}')">
-                            <td><span class="badge badge-${req.MethodType}">${req.MethodType}</span></td>
-                            <td><span style="color: ${req.StatusCode >= 400 ? 'var(--delete-color)' : 'var(--post-color)'}; font-weight: 600;">${req.StatusCode || 200}</span></td>
+                            <td>${badge(req.MethodType)}</td>
+                            <td><span style="color: ${statusColor(req.StatusCode)}; font-weight: 600;">${req.StatusCode || 200}</span></td>
                             <td class="font-mono">${req.Resource}</td>
                             <td class="text-muted" style="font-size: 0.8rem;">${formatDate(req.CreateAt)}</td>
-                            <td class="text-right font-mono ${getRank(req.DurationMillis).textClass}">${req.DurationMillis}ms <span class="rank-badge ${getRank(req.DurationMillis).bgClass}">${getRank(req.DurationMillis).label}</span></td>
+                            <td class="text-right font-mono ${getRank(req.DurationMillis).textClass}">${req.DurationMillis}ms ${rankBadge(req.DurationMillis)}</td>
                         </tr>
                         <tr id="${rowId}" class="details-row ${isOpen}">
                             <td colspan="5" style="padding: 0; border: none;">
                                 <div class="details-content">
+                                    <div style="margin-bottom: 0.5rem;"><strong>Resource:</strong> <span class="font-mono" style="word-break: break-all; color: var(--text-main);">${req.Resource || '-'}</span></div>
                                     <div style="margin-bottom: 0.5rem;"><strong>Context ID:</strong> ${req.ContextId || '-'}</div>
                                     <div style="margin-bottom: 0.5rem;"><strong>Queries:</strong> <span style="color:var(--primary)">${req.Queries ? '?' + req.Queries : 'None'}</span></div>
                                     ${req.ResponseBody ? `<div style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px;"><strong style="color: var(--delete-color);">&#9888; Resposta do Servidor (5XX):</strong><pre style="margin: 0.5rem 0 0 0; white-space: pre-wrap; word-break: break-all; font-size: 0.8rem; color: var(--text-main);">${req.ResponseBody}</pre></div>` : ''}
@@ -1590,11 +1903,11 @@
             sorted = ss ? sortData(sorted, ss.key, ss.dir) : sorted.sort((a, b) => b.RequestCount - a.RequestCount);
             sorted.forEach(m => {
                 tbody.innerHTML += `<tr>
-                    <td><span class="badge badge-${m.MethodType}">${m.MethodType}</span></td>
+                    <td>${badge(m.MethodType)}</td>
                     <td class="text-right">${m.RequestCount.toLocaleString()}</td>
-                    <td class="text-right ${getRank(m.AvgDurationMillis).textClass}">${m.AvgDurationMillis}ms <span class="rank-badge ${getRank(m.AvgDurationMillis).bgClass}">${getRank(m.AvgDurationMillis).label}</span></td>
-                    <td class="text-right text-muted">${m.P95DurationMillis !== undefined ? m.P95DurationMillis : '-'}ms</td>
-                    <td class="text-right text-muted">${m.P99DurationMillis !== undefined ? m.P99DurationMillis : '-'}ms</td>
+                    <td class="text-right ${getRank(m.AvgDurationMillis).textClass}">${m.AvgDurationMillis}ms ${rankBadge(m.AvgDurationMillis)}</td>
+                    <td class="text-right text-muted">${m.P95DurationMillis || '-'}ms</td>
+                    <td class="text-right text-muted">${m.P99DurationMillis || '-'}ms</td>
                     <td class="text-right" style="color: ${m.ErrorCount > 0 ? 'var(--delete-color)' : 'inherit'}">${m.ErrorCount || 0}</td>
                 </tr>`;
             });
@@ -1603,22 +1916,46 @@
         function renderResourceTable(data) {
             const tbody = document.getElementById('resource-tbody');
             if (!tbody) return;
+
+            const openDetails = new Set();
+            tbody.querySelectorAll('.details-row.open').forEach(row => openDetails.add(row.id));
+
             tbody.innerHTML = '';
             if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center">Nenhum recurso dispon&iacute;vel.</td></tr>'; return; }
             let sorted = [...data];
             const ss = sortState['resources'];
             sorted = ss ? sortData(sorted, ss.key, ss.dir) : sorted.sort((a, b) => b.AvgDurationMillis - a.AvgDurationMillis);
+            
+            let newHtml = '';
             sorted.forEach(r => {
-                tbody.innerHTML += `<tr>
-                    <td><span class="badge badge-${r.MethodType}">${r.MethodType}</span></td>
-                    <td class="font-mono text-muted">${r.Resource}</td>
-                    <td class="text-right">${r.RequestCount.toLocaleString()}</td>
-                    <td class="text-right ${getRank(r.AvgDurationMillis).textClass}">${r.AvgDurationMillis}ms <span class="rank-badge ${getRank(r.AvgDurationMillis).bgClass}">${getRank(r.AvgDurationMillis).label}</span></td>
-                    <td class="text-right text-muted">${r.P95DurationMillis !== undefined ? r.P95DurationMillis : '-'}ms</td>
-                    <td class="text-right text-muted">${r.P99DurationMillis !== undefined ? r.P99DurationMillis : '-'}ms</td>
-                    <td class="text-right" style="color: ${r.ErrorCount > 0 ? 'var(--delete-color)' : 'inherit'}">${r.ErrorCount || 0}</td>
-                </tr>`;
+                const safeId = 'res-details-' + r.MethodType + '-' + String(r.Resource).replace(/[^a-zA-Z0-9]/g, '');
+                const isOpen = openDetails.has(safeId) ? 'open' : '';
+                newHtml += `
+                    <tr class="expandable-row" onclick="toggleResourceDetails('${safeId}')">
+                        <td>${badge(r.MethodType)}</td>
+                        <td class="font-mono text-muted" style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${r.Resource}</td>
+                        <td class="text-right">${r.RequestCount.toLocaleString()}</td>
+                        <td class="text-right ${getRank(r.AvgDurationMillis).textClass}">${r.AvgDurationMillis}ms ${rankBadge(r.AvgDurationMillis)}</td>
+                        <td class="text-right text-muted">${r.P95DurationMillis || '-'}ms</td>
+                        <td class="text-right text-muted">${r.P99DurationMillis || '-'}ms</td>
+                        <td class="text-right" style="color: ${r.ErrorCount > 0 ? 'var(--delete-color)' : 'inherit'}">${r.ErrorCount || 0}</td>
+                    </tr>
+                    <tr id="${safeId}" class="details-row ${isOpen}">
+                        <td colspan="7" style="padding: 0; border: none;">
+                            <div class="details-content">
+                                <div style="margin-bottom: 0.5rem;"><strong>Resource:</strong> <span class="font-mono" style="word-break: break-all; color: var(--text-main);">${r.Resource || '-'}</span></div>
+                            </div>
+                        </td>
+                    </tr>`;
             });
+            tbody.innerHTML = newHtml;
+        }
+
+        function toggleResourceDetails(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.classList.toggle('open');
+            }
         }
 
         function updateSortableTable(tableId, summary) {
@@ -1648,41 +1985,121 @@
         }
 
         // Demo Data Fallback
-        const demoSummary = {
-            "GlobalStatistics": {
-                "UniqueContextsCount": 142,
-                "TotalErrors": 1,
-                "TotalSuccess": 52
-            },
-            "StatusCodeSummaryStatistics": [
-                { "StatusCode": 200, "RequestCount": 52 },
-                { "StatusCode": 404, "RequestCount": 1 }
-            ],
-            "MethodTypeSummaryStatistics": [
-                { "MethodType": "GET", "RequestCount": 41, "MinDurationMillis": 6, "MaxDurationMillis": 127, "AvgDurationMillis": 52, "P95DurationMillis": 98, "P99DurationMillis": 120, "ErrorCount": 1 },
-                { "MethodType": "POST", "RequestCount": 12, "MinDurationMillis": 10, "MaxDurationMillis": 250, "AvgDurationMillis": 85, "P95DurationMillis": 190, "P99DurationMillis": 240, "ErrorCount": 0 }
-            ],
-            "ResourceSummaryStatistics": [
-                { "MethodType": "GET", "Resource": "/hello-world", "RequestCount": 25, "AvgDurationMillis": 54, "P95DurationMillis": 95, "P99DurationMillis": 115, "ErrorCount": 0 },
-                { "MethodType": "GET", "Resource": "/hm-summary-statistics", "RequestCount": 1, "AvgDurationMillis": 52, "P95DurationMillis": 52, "P99DurationMillis": 52, "ErrorCount": 0 },
-                { "MethodType": "GET", "Resource": "/telemetry-statistics", "RequestCount": 15, "AvgDurationMillis": 47, "P95DurationMillis": 85, "P99DurationMillis": 92, "ErrorCount": 1 },
-                { "MethodType": "POST", "Resource": "/users/create", "RequestCount": 12, "AvgDurationMillis": 85, "P95DurationMillis": 190, "P99DurationMillis": 240, "ErrorCount": 0 }
-            ]
-        };
-        const demoRequests = [
-            { "MethodType": "GET", "StatusCode": 200, "Resource": "/telemetry/requests", "DurationMillis": 41, "ContextId": "1062fe94-a1ff-4aa5-ac1f-29dca3ac616f", "Queries": "", "CreateAt": new Date().toISOString() },
-            { "MethodType": "POST", "StatusCode": 200, "Resource": "/users/create", "DurationMillis": 250, "ContextId": "7a3f27ab-d753-4eff-ba2b-07c070054d72", "Queries": "limit=10", "CreateAt": new Date(Date.now() - 2000).toISOString() },
-            { "MethodType": "GET", "StatusCode": 200, "Resource": "/hello-world", "DurationMillis": 15, "ContextId": "8b3f27ab-d753-4eff-ba2b-07c070054d73", "Queries": "", "CreateAt": new Date(Date.now() - 5000).toISOString() },
-            { "MethodType": "GET", "StatusCode": 404, "Resource": "/telemetry-statistics", "DurationMillis": 55, "ContextId": "9c3f27ab-d753-4eff-ba2b-07c070054d74", "Queries": "", "CreateAt": new Date(Date.now() - 10000).toISOString() }
-        ];
+        const demoSummary = { "GlobalStatistics": { "UniqueContextsCount": 142, "TotalErrors": 1, "TotalSuccess": 52 }, "StatusCodeSummaryStatistics": [{ "StatusCode": 200, "RequestCount": 52 }, { "StatusCode": 404, "RequestCount": 1 }], "MethodTypeSummaryStatistics": [{ "MethodType": "GET", "RequestCount": 41, "MinDurationMillis": 6, "MaxDurationMillis": 127, "AvgDurationMillis": 52, "P95DurationMillis": 98, "P99DurationMillis": 120, "ErrorCount": 1 }, { "MethodType": "POST", "RequestCount": 12, "MinDurationMillis": 10, "MaxDurationMillis": 250, "AvgDurationMillis": 85, "P95DurationMillis": 190, "P99DurationMillis": 240, "ErrorCount": 0 }], "ResourceSummaryStatistics": [{ "MethodType": "GET", "Resource": "/hello-world", "RequestCount": 25, "AvgDurationMillis": 54, "P95DurationMillis": 95, "P99DurationMillis": 115, "ErrorCount": 0 }, { "MethodType": "GET", "Resource": "/hm-summary-statistics", "RequestCount": 1, "AvgDurationMillis": 52, "P95DurationMillis": 52, "P99DurationMillis": 52, "ErrorCount": 0 }, { "MethodType": "GET", "Resource": "/telemetry-statistics", "RequestCount": 15, "AvgDurationMillis": 47, "P95DurationMillis": 85, "P99DurationMillis": 92, "ErrorCount": 1 }, { "MethodType": "POST", "Resource": "/users/create", "RequestCount": 12, "AvgDurationMillis": 85, "P95DurationMillis": 190, "P99DurationMillis": 240, "ErrorCount": 0 }] };
+        const demoRequests = [{ "MethodType": "GET", "StatusCode": 200, "Resource": "/telemetry/requests", "DurationMillis": 41, "ContextId": "1062fe94-a1ff-4aa5-ac1f-29dca3ac616f", "Queries": "", "CreateAt": new Date().toISOString() }, { "MethodType": "POST", "StatusCode": 200, "Resource": "/users/create", "DurationMillis": 250, "ContextId": "7a3f27ab-d753-4eff-ba2b-07c070054d72", "Queries": "limit=10", "CreateAt": new Date(Date.now() - 2000).toISOString() }, { "MethodType": "GET", "StatusCode": 200, "Resource": "/hello-world", "DurationMillis": 15, "ContextId": "8b3f27ab-d753-4eff-ba2b-07c070054d73", "Queries": "", "CreateAt": new Date(Date.now() - 5000).toISOString() }, { "MethodType": "GET", "StatusCode": 404, "Resource": "/telemetry-statistics", "DurationMillis": 55, "ContextId": "9c3f27ab-d753-4eff-ba2b-07c070054d74", "Queries": "", "CreateAt": new Date(Date.now() - 10000).toISOString() }];
+
+        function onGlobalFilterChange(fromQuickFilter = false) {
+            currentPage = 1;
+            // Remove active state from quick filters when manually changing dates
+            if (!fromQuickFilter) {
+                document.querySelectorAll('.btn-quick-filter').forEach(b => b.classList.remove('active'));
+            }
+            fetchAPI();
+        }
+
+        function clearGlobalFilters() {
+            const fromInput = document.getElementById('global-date-from');
+            const toInput = document.getElementById('global-date-to');
+            if (fromInput._flatpickr) fromInput._flatpickr.clear();
+            else fromInput.value = '';
+            
+            if (toInput._flatpickr) toInput._flatpickr.clear();
+            else toInput.value = '';
+            
+            onGlobalFilterChange();
+        }
+
+        function setQuickFilter(type) {
+            const now = new Date();
+            let from = new Date();
+            let to = new Date();
+
+            // Format to YYYY-MM-DDTHH:mm for datetime-local
+            const formatForInput = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            };
+
+            switch (type) {
+                case '3h':
+                    from.setHours(now.getHours() - 3);
+                    break;
+                case '6h':
+                    from.setHours(now.getHours() - 6);
+                    break;
+                case 'today':
+                    from.setHours(0, 0, 0, 0);
+                    break;
+                case 'yesterday':
+                    from.setDate(now.getDate() - 1);
+                    break;
+                case 'week':
+                    // Start of week (Monday)
+                    const day = from.getDay();
+                    const diff = from.getDate() - day + (day === 0 ? -6 : 1);
+                    from.setDate(diff);
+                    from.setHours(0, 0, 0, 0);
+                    break;
+                case 'month':
+                    from.setDate(1);
+                    from.setHours(0, 0, 0, 0);
+                    break;
+            }
+
+            const fromInput = document.getElementById('global-date-from');
+            const toInput = document.getElementById('global-date-to');
+            const formattedFrom = formatForInput(from);
+            const formattedTo = formatForInput(to);
+            
+            if (fromInput._flatpickr) fromInput._flatpickr.setDate(from, false);
+            else fromInput.value = formattedFrom;
+            
+            if (toInput._flatpickr) toInput._flatpickr.setDate(to, false);
+            else toInput.value = formattedTo;
+
+            // Update active state
+            document.querySelectorAll('.btn-quick-filter').forEach(b => b.classList.remove('active'));
+            const targetElement = window.event ? window.event.target : null;
+            if (targetElement && targetElement.classList && targetElement.classList.contains('btn-quick-filter')) {
+                targetElement.classList.add('active');
+            } else {
+                const btn = Array.from(document.querySelectorAll('.btn-quick-filter')).find(b => {
+                    const onclickAttr = b.getAttribute('onclick');
+                    return onclickAttr && onclickAttr.includes(`'${type}'`);
+                });
+                if (btn) btn.classList.add('active');
+            }
+
+            onGlobalFilterChange(true);
+        }
+
+        let secondsToRefresh = POLL_INTERVAL / 1000;
+        function updateRefreshTimer() {
+            secondsToRefresh--;
+            if (secondsToRefresh <= 0) secondsToRefresh = POLL_INTERVAL / 1000;
+            const el = document.getElementById('refresh-timer');
+            if (el) el.textContent = secondsToRefresh;
+        }
 
         async function fetchAPI() {
             try {
-                // Fetch from the exact endpoints
-                const reqUrl = ENDPOINT_REQUESTS + '?page=' + currentPage;
-                console.log('[Horsemetry] Fetching:', ENDPOINT_SUMMARY, reqUrl);
+                const dateFrom = document.getElementById('global-date-from').value;
+                const dateTo = document.getElementById('global-date-to').value;
+
+                let queryParams = `?page=${currentPage}`;
+                if (dateFrom) queryParams += `&start_date=${new Date(dateFrom).toISOString()}`;
+                if (dateTo) queryParams += `&end_date=${new Date(dateTo).toISOString()}`;
+
+                const summaryUrl = ENDPOINT_SUMMARY + queryParams.replace(`page=${currentPage}`, '');
+                const reqUrl = ENDPOINT_REQUESTS + queryParams;
+
+                console.log('[Horsemetry] Fetching:', summaryUrl, reqUrl);
                 const [resSummary, resRequests] = await Promise.allSettled([
-                    fetch(ENDPOINT_SUMMARY),
+                    fetch(summaryUrl),
                     fetch(reqUrl)
                 ]);
 
@@ -1699,9 +2116,9 @@
                 if (sumData && reqData) {
                     updateUI(sumData, reqData, false);
                 } else {
-                    // Fallback to Demo Mode if fetch fails (e.g. running from file://)
                     updateUI(demoSummary, demoRequests, true);
                 }
+                secondsToRefresh = POLL_INTERVAL / 1000;
             } catch (error) {
                 console.warn("Fetch failed, using demo data.", error);
                 updateUI(demoSummary, demoRequests, true);
@@ -1746,12 +2163,64 @@
 
         // Close modal when clicking outside of it
         const modal = document.getElementById('rankModal');
-        if (modal) {
-            modal.addEventListener('click', function (e) {
-                if (e.target === this) {
-                    this.style.display = 'none';
-                }
-            });
+        const infoModal = document.getElementById('chartInfoModal');
+        document.addEventListener('click', function (e) {
+            if (modal && e.target === modal) {
+                modal.style.display = 'none';
+            }
+            if (infoModal && e.target === infoModal) {
+                infoModal.style.display = 'none';
+            }
+        });
+
+        // --- Chart Info Modal Logic ---
+        const chartInfoData = {
+            'method': {
+                title: 'Requisições por Método',
+                origin: 'Endpoint: /telemetry/summary-statistics\nNó: MethodTypeSummaryStatistics',
+                calc: 'Soma total do volume de requisições recebidas, agrupadas pelo tipo de verbo HTTP (ex: GET, POST).',
+                filter: 'Sim. Os dados são calculados considerando apenas o período selecionado no filtro global.'
+            },
+            'status': {
+                title: 'Requisições por Status',
+                origin: 'Endpoint: /telemetry/summary-statistics\nNó: StatusCodeSummaryStatistics',
+                calc: 'Soma total de requisições agrupadas pela família do código de resposta (ex: 2xx Sucesso, 5xx Erro).',
+                filter: 'Sim. Os dados são calculados considerando apenas o período selecionado no filtro global.'
+            },
+            'resource': {
+                title: 'Tempo Médio por Recurso',
+                origin: 'Endpoint: /telemetry/summary-statistics\nNó: ResourceSummaryStatistics',
+                calc: 'Calcula a média de tempo de resposta (em milissegundos) dos 10 recursos (rotas) mais acessados da API.',
+                filter: 'Sim. As médias são extraídas apenas das requisições dentro do período selecionado.'
+            },
+            'latency': {
+                title: 'Latência ao Longo do Tempo',
+                origin: 'Endpoint: /telemetry/requests',
+                calc: 'Mostra o tempo exato (latência em ms) de cada uma das requisições recentes, dispostas cronologicamente.',
+                filter: 'Sim. Exibe apenas a amostra de requisições recebidas dentro do filtro global de data/hora.'
+            },
+            'rpm': {
+                title: 'Requisições por Minuto',
+                origin: 'Endpoint: /telemetry/summary-statistics\nNó: RequestsPerMinute',
+                calc: 'Soma total de requisições recebidas agrupadas em blocos de 1 minuto (throughput).',
+                filter: 'Sim. A série temporal respeita o início e fim definidos no filtro global.'
+            },
+            'expensive': {
+                title: 'Proporção de Tempo',
+                origin: 'Endpoint: /telemetry/summary-statistics\nNó: TopExpensiveRequests',
+                calc: 'Compara visualmente o tempo de execução (em ms) entre as 5 requisições individuais mais lentas já registradas.',
+                filter: 'Sim. Busca o top 5 de lentidão especificamente dentro do período filtrado.'
+            }
+        };
+
+        function openChartInfo(chartId) {
+            const info = chartInfoData[chartId];
+            if (!info) return;
+            document.getElementById('infoModalTitle').textContent = info.title;
+            document.getElementById('infoModalOrigin').textContent = info.origin;
+            document.getElementById('infoModalCalc').textContent = info.calc;
+            document.getElementById('infoModalFilter').textContent = info.filter;
+            document.getElementById('chartInfoModal').style.display = 'flex';
         }
 
         // --- Subroutine Fetch & Render ---
@@ -1839,8 +2308,25 @@
         // Bootstrap
         document.addEventListener('DOMContentLoaded', () => {
             initCharts();
-            fetchAPI();
+
+            // Init Flatpickr for dates
+            const fpConfig = {
+                enableTime: true,
+                dateFormat: "Y-m-d\\TH:i",
+                altInput: true,
+                altFormat: "d/m/Y H:i",
+                locale: "pt",
+                onChange: function(selectedDates, dateStr, instance) {
+                    onGlobalFilterChange();
+                }
+            };
+            flatpickr("#global-date-from", fpConfig);
+            flatpickr("#global-date-to", fpConfig);
+
+            // Pre-filter by current week on initialization
+            setQuickFilter('week');
             pollTimer = setInterval(fetchAPI, POLL_INTERVAL);
+            setInterval(updateRefreshTimer, 1000);
 
             // Sortable column click handler (event delegation)
             document.addEventListener('click', function (e) {
@@ -1851,40 +2337,58 @@
     </script>
 
     <!-- Rank Modal -->
-    <div id="rankModal"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; backdrop-filter: blur(2px);">
-        <div
-            style="background:var(--card-bg); padding:2rem; border-radius:8px; max-width:450px; width:90%; border: 1px solid var(--border-color); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-            <h3 style="margin-bottom: 1rem; color: var(--text-main);">Entenda as Classifica&ccedil;&otilde;es de
-                Performance</h3>
-            <p style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.9rem;">
-                O dashboard classifica automaticamente os tempos de resposta da sua API em seis n&iacute;veis de
-                performance para ajudar a identificar gargalos:
-            </p>
-            <div
-                style="display: flex; flex-direction: column; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem;">
-                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-very-good"
-                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Excelente</span>
-                    <span>&le; 100ms. Tempo de resposta &oacute;timo.</span></div>
-                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-good"
-                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Bom</span>
-                    <span>&le; 300ms. Tempo de resposta aceitável.</span></div>
-                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-ok"
-                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Aceit&aacute;vel</span>
-                    <span>&le; 500ms. Dentro da m&eacute;dia, potencial de melhoria.</span></div>
-                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-needs-improvement"
-                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Aten&ccedil;&atilde;o</span>
-                    <span>&le; 750ms. Resposta lenta detectada.</span></div>
-                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-bad"
-                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Ruim</span>
-                    <span>&le; 1000ms. Alta lat&ecirc;ncia detectada.</span></div>
-                <div style="display: flex; align-items: center;"><span class="rank-badge rank-bg-nightmare"
-                        style="width: 110px; text-align: center; margin-left: 0; margin-right: 1rem; cursor: default; box-shadow: none;">Cr&iacute;tico</span>
-                    <span>&gt; 1000ms. Gargalo crítico de performance.</span></div>
+    <div id="rankModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Entenda as Classifica&ccedil;&otilde;es</h3>
+            <p class="modal-text">O Horsemetry classifica automaticamente os tempos de resposta:</p>
+            <div class="modal-rank-list">
+                <div class="modal-rank-item"><span
+                        class="rank-badge rank-bg-very-good modal-rank-badge">Excelente</span><span>&le; 100ms.
+                        &Oacute;timo.</span></div>
+                <div class="modal-rank-item"><span class="rank-badge rank-bg-good modal-rank-badge">Bom</span><span>&le;
+                        300ms. Aceit&aacute;vel.</span></div>
+                <div class="modal-rank-item"><span
+                        class="rank-badge rank-bg-ok modal-rank-badge">Aceit&aacute;vel</span><span>&le; 500ms. Na
+                        m&eacute;dia.</span></div>
+                <div class="modal-rank-item"><span
+                        class="rank-badge rank-bg-needs-improvement modal-rank-badge">Aten&ccedil;&atilde;o</span><span>&le;
+                        750ms. Lento.</span></div>
+                <div class="modal-rank-item"><span class="rank-badge rank-bg-bad modal-rank-badge">Ruim</span><span>&le;
+                        1000ms. Alta lat&ecirc;ncia.</span></div>
+                <div class="modal-rank-item"><span
+                        class="rank-badge rank-bg-nightmare modal-rank-badge">Cr&iacute;tico</span><span>&gt; 1000ms.
+                        Gargalo.</span></div>
             </div>
-            <div style="text-align: right; margin-top: 2rem;">
+            <div class="modal-footer">
                 <button onclick="document.getElementById('rankModal').style.display='none'"
-                    style="padding: 0.5rem 1.5rem; border: none; background: var(--primary); color: white; border-radius: 4px; cursor: pointer; font-weight: 500;">Fechar</button>
+                    class="modal-btn-close">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Info Modal -->
+    <div id="chartInfoModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 class="modal-title" id="infoModalTitle">Sobre o Gráfico</h3>
+            
+            <div style="margin-bottom: 1rem;">
+                <strong style="color: var(--text-main);">Origem do Dado:</strong>
+                <div id="infoModalOrigin" class="font-mono text-muted" style="font-size: 0.85rem; margin-top: 0.25rem; background: var(--surface-subtle); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); white-space: pre-wrap;"></div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <strong style="color: var(--text-main);">Como é calculado:</strong>
+                <div id="infoModalCalc" class="modal-text" style="margin-top: 0.25rem; margin-bottom: 0;"></div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <strong style="color: var(--text-main);">Filtro de Data:</strong>
+                <div id="infoModalFilter" class="modal-text" style="margin-top: 0.25rem; margin-bottom: 0;"></div>
+            </div>
+
+            <div class="modal-footer" style="margin-top: 1.5rem;">
+                <button onclick="document.getElementById('chartInfoModal').style.display='none'"
+                    class="modal-btn-close">Entendi</button>
             </div>
         </div>
     </div>

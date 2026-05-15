@@ -5,15 +5,16 @@ interface
 uses
   Horsemetry.Command.Types,
   Horsemetry.DTO.SubRoutine,
-  Horsemetry.DTO.Statistics;
+  Horsemetry.DTO.Statistics,
+  Horsemetry.DataStore.Filter;
 
 type
   IDataStore = interface
-    function GetResources(out Resources: TResourceList; const Page: Integer = 1; const Limit: Integer = 50): Boolean;
-    function GetStatistics(out Statistics: TStatistics): Boolean;
+    function GetResources(out Resources: TResourceList; const Filter: TDataStoreFilter): Boolean;
+    function GetStatistics(out Statistics: TStatistics; const Filter: TDataStoreFilter): Boolean;
     procedure PersistRequest(const Command: TNewRequestDataCommand);
     procedure PersistSubRoutine(const Command: TNewSubRoutineDataCommand);
-    procedure GetAllSubRoutinesByContextId(const ContextId: String; var SubRoutineList: TSubRoutineList);
+    procedure GetAllSubRoutinesByContextId(var SubRoutineList: TSubRoutineList; const Filter: TDataStoreFilter);
     procedure CleanUp();
   end;
 

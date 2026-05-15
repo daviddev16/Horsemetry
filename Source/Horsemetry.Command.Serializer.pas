@@ -53,7 +53,7 @@ begin
     Result := lJSONObject.ToJSON();
   finally
     lSerializer.Free();
-    if not Assigned(lJSONObject) then
+    if Assigned(lJSONObject) then
       lJSONObject.Free();
   end;
 end;

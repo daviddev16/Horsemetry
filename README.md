@@ -31,6 +31,16 @@ No dashboard frontend do Horsemetry, você tem acesso aos seguintes dados e visu
 
 
 
+## 🆕 Últimas Atualizações (Dashboard)
+
+- **Modais Informativos**: Adicionado botão `?` em todos os gráficos do painel, fornecendo explicações claras sobre a origem dos dados, método de cálculo e uso de filtros.
+- **Tabela de Recursos Expansível**: A tabela "Tempo Médio por Recurso" agora suporta expansão de linha ao clicar, permitindo visualizar a rota completa (mesmo as muito longas) com quebra de linha apropriada.
+- **Novo Date Picker (Flatpickr)**: Substituição do campo de data padrão do navegador pelo Flatpickr, oferecendo uma experiência de seleção de datas muito mais moderna, fluida e com suporte 100% integrado ao Dark Mode.
+- **Estabilidade de Filtros**: Correção no comportamento de renderização dos filtros rápidos (ex: "Semana Atual") que agora são aplicados corretamente já na inicialização do dashboard.
+- **Refinamento Visual**: Remoção de gradientes, animações desnecessárias e correções nas cores de alertas (Atenção e Crítico) para garantir uma interface estática, rápida e padronizada.
+
+---
+
 ## 🚀 Primeiros Passos
 
 O Horsemetry utiliza uma arquitetura baseada em Providers para instanciar as conexões com o banco de telemetria em threads separadas quando necessário.
@@ -89,7 +99,12 @@ begin
   // 1. Informando a sua classe provedora de banco para o Horsemetry
   THorsemetry.SetDataStoreProviderClass(TMyDataStoreProvider);
   
-  // 2. Injetando a rota de painel (ex. /telemetry) automaticamente
+  // 2. Customizações (Opcional)
+  THorsemetry.SetHeader('Horsemetry API');
+  THorsemetry.SetDescription('Your custom description');
+  THorsemetry.IgnoreResource('/product'); // Ignora essa rota nos relatórios
+  
+  // 3. Injetando a rota de painel (ex. /telemetry) automaticamente
   THorsemetry.InstallRoutes();
   
   // 3. Adicionando o Middleware Global no Horse
